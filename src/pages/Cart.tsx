@@ -1,0 +1,221 @@
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+
+interface CartItem {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
+
+const Cart = () => {
+  const navigate = useNavigate();
+  const [cartItems, setCartItems] = useState<CartItem[]>([
+    {
+      id: 1,
+      name: "Classic Burger",
+      price: 149,
+      quantity: 2,
+      image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop",
+    },
+    {
+      id: 2,
+      name: "Margherita Pizza",
+      price: 199,
+      quantity: 1,
+      image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&auto=format&fit=crop",
+    },
+    {
+      id: 3,
+      name: "French Fries",
+      price: 79,
+      quantity: 2,
+      image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&auto=format&fit=crop",
+    },
+  ]);
+
+  const updateQuantity = (id: number, change: number) => {
+    setCartItems((items) =>
+      items
+        .map((item) =>
+          item.id === id
+            ? { ...item, quantity: Math.max(0, item.quantity + change) }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const removeItem = (id: number) => {
+    setCartItems((items) => items.filter((item) => item.id !== id));
+  };
+
+  const subtotal = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const deliveryFee = 20;
+  const tax = Math.round(subtotal * 0.05);
+  const total = subtotal + deliveryFee + tax;
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="sticky top-0 z-40 bg-background border-b">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full"
+                onClick={() => navigate(-1)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h1 className="text-xl font-bold">Cart</h1>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
+          <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4">
+            <ShoppingBag className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
+          <p className="text-muted-foreground mb-6">
+            Add items from outlets to get started
+          </p>
+          <Link to="/">
+            <Button className="rounded-full">Browse Outlets</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-32">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-background border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-xl font-bold">Cart ({cartItems.length} items)</h1>
+          </div>
+        </div>
+      </header>
+
+      {/* Cart Items */}
+      <main className="container mx-auto px-4 py-6">
+        <Card className="p-4 mb-4">
+          <div className="flex items-center gap-2 mb-4">
+            <ShoppingBag className="h-5 w-5 text-primary" />
+            <span className="font-semibold">Campus Café</span>
+          </div>
+          <div className="space-y-4">
+            {cartItems.map((item) => (
+              <div key={item.id} className="flex gap-4">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-20 h-20 rounded-xl object-cover"
+                />
+                <div className="flex-1">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="font-semibold">{item.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        ₹{item.price}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => removeItem(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 bg-muted rounded-full px-2 py-1 w-fit">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 rounded-full"
+                      onClick={() => updateQuantity(item.id, -1)}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="min-w-6 text-center font-medium">
+                      {item.quantity}
+                    </span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 rounded-full"
+                      onClick={() => updateQuantity(item.id, 1)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Bill Details */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-4">Bill Details</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Item Total</span>
+              <span>₹{subtotal}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Delivery Fee</span>
+              <span>₹{deliveryFee}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Taxes</span>
+              <span>₹{tax}</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between font-semibold text-lg">
+              <span>Total</span>
+              <span>₹{total}</span>
+            </div>
+          </div>
+        </Card>
+      </main>
+
+      {/* Checkout Button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+        <div className="container mx-auto">
+          <Link to="/checkout">
+            <Button size="lg" className="w-full rounded-full shadow-xl">
+              <div className="flex items-center justify-between w-full">
+                <span>Proceed to Checkout</span>
+                <span className="font-semibold">₹{total}</span>
+              </div>
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Cart;
