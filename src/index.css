@@ -8,41 +8,58 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Base Colors - Clean & Energetic Palette */
     --background: 0 0% 100%;
-    --foreground: 20 14% 10%;
+    --foreground: 220 13% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 20 14% 10%;
+    --card-foreground: 220 13% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 10%;
+    --popover-foreground: 220 13% 13%;
 
-    --primary: 25 95% 53%;
+    /* Primary - Vibrant Orange (Energy & Appetite) */
+    --primary: 27 96% 61%;
+    --primary-light: 27 96% 71%;
+    --primary-dark: 27 96% 51%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 142 71% 45%;
+    /* Secondary - Fresh Green (Healthy & Fresh) */
+    --secondary: 142 76% 36%;
+    --secondary-light: 142 76% 46%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 20 14% 96%;
-    --muted-foreground: 20 10% 45%;
-
-    --accent: 142 71% 45%;
+    /* Accent - Electric Blue (Trust & Speed) */
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
+
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 9% 46%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 20 14% 90%;
-    --input: 20 14% 90%;
-    --ring: 25 95% 53%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 27 96% 61%;
 
     --radius: 1rem;
     
-    --gradient-warm: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(15 90% 58%) 100%);
-    --gradient-fresh: linear-gradient(135deg, hsl(142 71% 45%) 0%, hsl(160 70% 50%) 100%);
-    --shadow-card: 0 4px 6px -1px hsl(20 14% 10% / 0.08), 0 2px 4px -2px hsl(20 14% 10% / 0.05);
-    --shadow-card-hover: 0 10px 15px -3px hsl(20 14% 10% / 0.1), 0 4px 6px -4px hsl(20 14% 10% / 0.1);
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(27 96% 61%) 0%, hsl(15 90% 58%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(160 70% 45%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(27 96% 61%) 0%, hsl(27 96% 71%) 100%);
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 13% 13% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 13% 13% / 0.08), 0 2px 4px -2px hsl(220 13% 13% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(220 13% 13% / 0.1), 0 4px 6px -4px hsl(220 13% 13% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(220 13% 13% / 0.1), 0 8px 10px -6px hsl(220 13% 13% / 0.05);
+    
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
 
@@ -62,33 +79,36 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 20 14% 8%;
+    --background: 220 13% 9%;
     --foreground: 0 0% 98%;
 
-    --card: 20 14% 12%;
+    --card: 220 13% 12%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 20 14% 12%;
+    --popover: 220 13% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 25 95% 53%;
+    --primary: 27 96% 61%;
+    --primary-light: 27 96% 71%;
+    --primary-dark: 27 96% 51%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 142 71% 45%;
+    --secondary: 142 76% 36%;
+    --secondary-light: 142 76% 46%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 20 14% 16%;
-    --muted-foreground: 20 10% 60%;
-
-    --accent: 142 71% 45%;
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
+
+    --muted: 220 13% 16%;
+    --muted-foreground: 220 9% 60%;
 
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 20 14% 20%;
-    --input: 20 14% 20%;
-    --ring: 25 95% 53%;
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 27 96% 61%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -106,6 +126,23 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Typography Scale */
+  h1 {
+    @apply text-3xl md:text-4xl font-bold font-display tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl font-bold font-display tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl font-semibold font-display;
+  }
+
+  h4 {
+    @apply text-lg md:text-xl font-semibold;
   }
 }
