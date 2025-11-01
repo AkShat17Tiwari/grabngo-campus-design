@@ -176,29 +176,34 @@ const Cart = () => {
           </div>
         </Card>
 
-        {/* Bill Details */}
-        <Card className="p-4">
-          <h3 className="font-semibold mb-4">Bill Details</h3>
+        {/* Bill Details - Order Summary Component */}
+        <Card className="p-5 bg-gradient-to-br from-primary/5 to-secondary/5 border-2">
+          <h3 className="font-bold text-xl mb-4 text-foreground">Order Summary</h3>
           <div className="space-y-3">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-base">
               <span className="text-muted-foreground">Item Total</span>
-              <span>₹{subtotal}</span>
+              <span className="font-semibold">₹{subtotal}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-base">
               <span className="text-muted-foreground">Delivery Fee</span>
-              <span>₹{deliveryFee}</span>
+              <span className="font-semibold text-secondary">₹{deliveryFee}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Taxes</span>
-              <span>₹{tax}</span>
+            <div className="flex justify-between text-base">
+              <span className="text-muted-foreground">Taxes (5%)</span>
+              <span className="font-semibold">₹{tax}</span>
             </div>
-            <Separator />
-            <div className="flex justify-between font-semibold text-lg">
-              <span>Total</span>
-              <span>₹{total}</span>
+            <Separator className="my-3" />
+            <div className="flex justify-between items-center bg-primary/10 -mx-5 -mb-5 px-5 py-4 rounded-b-lg mt-4">
+              <span className="font-bold text-xl">Grand Total</span>
+              <span className="font-bold text-2xl text-primary">₹{total}</span>
             </div>
           </div>
         </Card>
+
+        {/* Additional Info */}
+        <div className="text-center text-sm text-muted-foreground mt-4">
+          <p>💡 All prices are inclusive of applicable taxes</p>
+        </div>
       </main>
 
       {/* Checkout Button */}

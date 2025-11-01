@@ -1,16 +1,17 @@
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, MapPin, Package, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Package, CheckCircle2, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 
 interface Order {
   id: string;
   outletName: string;
   items: string[];
   total: number;
-  status: "preparing" | "ready" | "delivered";
+  status: "placed" | "preparing" | "ready" | "completed";
   orderTime: string;
   pickupTime: string;
 }
@@ -39,31 +40,66 @@ const orders: Order[] = [
     outletName: "Healthy Bites",
     items: ["Caesar Salad x1", "Green Smoothie x1"],
     total: 249,
-    status: "delivered",
+    status: "completed",
     orderTime: "12:30 PM",
     pickupTime: "12:50 PM",
+  },
+  {
+    id: "ORD-2398",
+    outletName: "Burger Hub",
+    items: ["Veggie Burger x1", "Fries x1"],
+    total: 179,
+    status: "placed",
+    orderTime: "2:45 PM",
+    pickupTime: "3:05 PM",
   },
 ];
 
 const statusConfig = {
+  placed: {
+    label: "Order Placed",
+    icon: Package,
+    color: "bg-accent/20 text-accent-foreground",
+    iconColor: "text-accent-foreground",
+    progress: 25,
+  },
   preparing: {
     label: "Preparing",
-    icon: Package,
+    icon: ChefHat,
     color: "bg-primary/10 text-primary",
     iconColor: "text-primary",
+    progress: 50,
   },
   ready: {
     label: "Ready for Pickup",
     icon: CheckCircle2,
     color: "bg-secondary/10 text-secondary",
     iconColor: "text-secondary",
+    progress: 75,
   },
-  delivered: {
-    label: "Delivered",
+  completed: {
+    label: "Completed",
     icon: CheckCircle2,
     color: "bg-muted text-muted-foreground",
     iconColor: "text-muted-foreground",
+    progress: 100,
   },
+};
+
+const getStatusSteps = (currentStatus: Order["status"]) => {
+  const steps = [
+    { status: "placed", label: "Placed" },
+    { status: "preparing", label: "Preparing" },
+    { status: "ready", label: "Ready" },
+    { status: "completed", label: "Completed" },
+  ];
+  
+  const currentIndex = steps.findIndex((s) => s.status === currentStatus);
+  return steps.map((step, index) => ({
+    ...step,
+    isActive: index <= currentIndex,
+    isCurrent: index === currentIndex,
+  }));
 };
 
 const Orders = () => {
@@ -92,28 +128,83 @@ const Orders = () => {
         {orders.map((order) => {
           const config = statusConfig[order.status];
           const StatusIcon = config.icon;
+          const statusSteps = getStatusSteps(order.status);
 
           return (
-            <Card key={order.id} className="p-4 hover:shadow-md transition-shadow">
+            <Card key={order.id} className="p-5 hover:shadow-lg transition-all duration-300 border-2">
               {/* Order Header */}
-              <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="font-semibold text-lg">{order.outletName}</h3>
+                  <h3 className="font-bold text-lg">{order.outletName}</h3>
                   <p className="text-sm text-muted-foreground">
                     Order #{order.id}
                   </p>
                 </div>
-                <Badge className={config.color}>
-                  <StatusIcon className="h-3 w-3 mr-1" />
+                <Badge className={`${config.color} px-3 py-1`}>
+                  <StatusIcon className="h-4 w-4 mr-1" />
                   {config.label}
                 </Badge>
               </div>
 
+              {/* Visual Progress Bar */}
+              <div className="mb-4 bg-muted/30 p-4 rounded-lg">
+                <div className="mb-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-semibold text-foreground">Order Status</span>
+                    <span className="text-xs text-muted-foreground">{config.progress}% Complete</span>
+                  </div>
+                  <Progress value={config.progress} className="h-2" />
+                </div>
+                
+                {/* Status Steps */}
+                <div className="grid grid-cols-4 gap-2 mt-4">
+                  {statusSteps.map((step) => (
+                    <div
+                      key={step.status}
+                      className={`text-center transition-all ${
+                        step.isActive
+                          ? "opacity-100"
+                          : "opacity-40"
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
+                          step.isActive
+                            ? step.isCurrent
+                              ? "bg-primary text-primary-foreground animate-pulse"
+                              : "bg-secondary text-secondary-foreground"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {step.isActive && <CheckCircle2 className="h-4 w-4" />}
+                      </div>
+                      <p className={`text-xs font-medium ${
+                        step.isCurrent ? "text-primary" : "text-muted-foreground"
+                      }`}>
+                        {step.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Estimated Pickup Time */}
+              {order.status !== "completed" && (
+                <div className="bg-secondary/10 p-3 rounded-lg mb-3 flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-secondary" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Estimated Pickup Time</p>
+                    <p className="text-lg font-bold text-secondary">{order.pickupTime}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Order Items */}
               <div className="mb-3">
+                <h4 className="font-semibold text-sm mb-2">Items:</h4>
                 {order.items.map((item, index) => (
-                  <p key={index} className="text-sm text-muted-foreground">
-                    {item}
+                  <p key={index} className="text-sm text-muted-foreground pl-2">
+                    • {item}
                   </p>
                 ))}
               </div>
@@ -121,32 +212,31 @@ const Orders = () => {
               <Separator className="my-3" />
 
               {/* Order Details */}
-              <div className="flex items-center justify-between text-sm mb-3">
+              <div className="flex items-center justify-between text-sm mb-4">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    <span>{order.orderTime}</span>
+                    <span>Ordered at {order.orderTime}</span>
                   </div>
-                  {order.status !== "delivered" && (
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      <span>Pickup by {order.pickupTime}</span>
-                    </div>
-                  )}
                 </div>
-                <span className="font-semibold">₹{order.total}</span>
+                <span className="font-bold text-lg text-primary">₹{order.total}</span>
               </div>
 
               {/* Action Buttons */}
               <div className="flex gap-2">
                 {order.status === "ready" && (
-                  <Button className="flex-1 rounded-full" variant="default">
+                  <Button className="flex-1 rounded-full font-semibold" variant="default">
                     View Pickup Details
                   </Button>
                 )}
-                {order.status === "delivered" && (
-                  <Button className="flex-1 rounded-full" variant="outline">
+                {order.status === "completed" && (
+                  <Button className="flex-1 rounded-full font-semibold" variant="outline">
                     Reorder
+                  </Button>
+                )}
+                {order.status !== "completed" && (
+                  <Button variant="outline" className="rounded-full">
+                    Track Order
                   </Button>
                 )}
                 <Button variant="outline" className="rounded-full">

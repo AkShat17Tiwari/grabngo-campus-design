@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Clock, CreditCard, Wallet } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, CreditCard, Wallet, User, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [paymentMethod, setPaymentMethod] = useState("razorpay");
   const [instructions, setInstructions] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
 
   const handlePlaceOrder = () => {
     setIsProcessing(true);
@@ -44,19 +47,57 @@ const Checkout = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-4">
-        {/* Delivery Details */}
+        {/* Pickup Details Form */}
+        <Card className="p-5 border-2">
+          <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            Pickup Details
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name" className="text-base font-semibold">
+                Full Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                placeholder="Enter your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-2 h-12"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone" className="text-base font-semibold">
+                Phone Number <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Enter 10-digit mobile number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="mt-2 h-12"
+                maxLength={10}
+                required
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Delivery Location */}
         <Card className="p-4">
           <div className="flex items-start gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
               <MapPin className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold mb-1">Delivery Location</h3>
+              <h3 className="font-semibold mb-1">Pickup Location</h3>
               <p className="text-sm text-muted-foreground">
-                Main Campus, Building A, Room 201
+                Campus Café - Main Campus, Building A
               </p>
               <Button variant="link" className="h-auto p-0 text-primary mt-1">
-                Change
+                View on Map
               </Button>
             </div>
           </div>
@@ -92,47 +133,50 @@ const Checkout = () => {
         </Card>
 
         {/* Payment Method */}
-        <Card className="p-4">
-          <h3 className="font-semibold mb-4">Payment Method</h3>
+        <Card className="p-5 border-2">
+          <h3 className="font-bold text-xl mb-4">Payment Method</h3>
           <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-            <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+            {/* Razorpay - Primary Payment Option */}
+            <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-primary hover:bg-primary/5 transition-colors">
+              <RadioGroupItem value="razorpay" id="razorpay" />
+              <Label
+                htmlFor="razorpay"
+                className="flex items-center gap-3 flex-1 cursor-pointer"
+              >
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <CreditCard className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-base">Pay with Razorpay</p>
+                  <p className="text-sm text-muted-foreground">
+                    UPI, Cards, Wallets & More - Safe & Secure
+                  </p>
+                </div>
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
               <RadioGroupItem value="upi" id="upi" />
               <Label
                 htmlFor="upi"
-                className="flex items-center gap-2 flex-1 cursor-pointer"
+                className="flex items-center gap-3 flex-1 cursor-pointer"
               >
-                <Wallet className="h-5 w-5" />
+                <Wallet className="h-6 w-6 text-secondary" />
                 <div>
-                  <p className="font-medium">UPI / Wallet</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-medium">UPI Direct</p>
+                  <p className="text-sm text-muted-foreground">
                     PhonePe, Google Pay, Paytm
                   </p>
                 </div>
               </Label>
             </div>
 
-            <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-              <RadioGroupItem value="card" id="card" />
-              <Label
-                htmlFor="card"
-                className="flex items-center gap-2 flex-1 cursor-pointer"
-              >
-                <CreditCard className="h-5 w-5" />
-                <div>
-                  <p className="font-medium">Credit / Debit Card</p>
-                  <p className="text-xs text-muted-foreground">
-                    Visa, Mastercard, RuPay
-                  </p>
-                </div>
-              </Label>
-            </div>
-
-            <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+            <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
               <RadioGroupItem value="cod" id="cod" />
               <Label htmlFor="cod" className="flex-1 cursor-pointer">
-                <p className="font-medium">Cash on Delivery</p>
-                <p className="text-xs text-muted-foreground">
-                  Pay when you receive
+                <p className="font-medium">Cash on Pickup</p>
+                <p className="text-sm text-muted-foreground">
+                  Pay when you collect your order
                 </p>
               </Label>
             </div>
@@ -140,24 +184,24 @@ const Checkout = () => {
         </Card>
 
         {/* Order Summary */}
-        <Card className="p-4">
-          <h3 className="font-semibold mb-3">Order Summary</h3>
-          <div className="space-y-2 text-sm">
+        <Card className="p-5 bg-gradient-to-br from-primary/5 to-secondary/5 border-2">
+          <h3 className="font-bold text-xl mb-4">Order Summary</h3>
+          <div className="space-y-3 text-base">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Item Total</span>
-              <span>₹565</span>
+              <span className="font-semibold">₹565</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Delivery Fee</span>
-              <span>₹20</span>
+              <span className="font-semibold text-secondary">₹20</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Taxes</span>
-              <span>₹20</span>
+              <span className="text-muted-foreground">Taxes (5%)</span>
+              <span className="font-semibold">₹20</span>
             </div>
-            <div className="border-t pt-2 flex justify-between font-semibold text-base">
-              <span>Total</span>
-              <span>₹{total}</span>
+            <div className="border-t-2 pt-3 mt-3 flex justify-between items-center">
+              <span className="font-bold text-xl">Grand Total</span>
+              <span className="font-bold text-2xl text-primary">₹{total}</span>
             </div>
           </div>
         </Card>

@@ -156,54 +156,63 @@ const Menu = () => {
       {/* Menu Items */}
       <main className="container mx-auto px-4 py-6">
         {categories.map((category) => (
-          <div key={category} className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">{category}</h2>
-            <div className="space-y-4">
+          <div key={category} className="mb-8 animate-fade-in">
+            <h2 className="text-2xl font-bold mb-4 text-foreground">{category}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {menuItems
                 .filter((item) => item.category === category)
                 .map((item) => (
                   <Card
                     key={item.id}
-                    className="p-4 flex gap-4 hover:shadow-md transition-shadow"
+                    className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
                   >
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-24 h-24 rounded-xl object-cover"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-1">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold">{item.name}</h3>
-                            <Badge
-                              variant={item.isVeg ? "secondary" : "destructive"}
-                              className="h-4 w-4 p-0 flex items-center justify-center"
-                            >
-                              <div className="w-2 h-2 rounded-full bg-current" />
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {item.description}
-                          </p>
+                    {/* Item Image - Prominent placeholder */}
+                    <div className="relative h-48 w-full bg-muted">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {!item.inStock && (
+                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                          <Badge variant="outline" className="text-destructive border-destructive">
+                            Out of Stock
+                          </Badge>
                         </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <span className="font-semibold text-lg">
+                      )}
+                      <Badge
+                        variant={item.isVeg ? "secondary" : "destructive"}
+                        className="absolute top-2 left-2 h-5 w-5 p-0 flex items-center justify-center"
+                      >
+                        <div className="w-2.5 h-2.5 rounded-full bg-current" />
+                      </Badge>
+                    </div>
+
+                    {/* Item Details */}
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg mb-1 line-clamp-1">{item.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-[2.5rem]">
+                        {item.description}
+                      </p>
+                      
+                      {/* Price and Add Button */}
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xl text-primary">
                           ₹{item.price}
                         </span>
                         {item.inStock ? (
                           cart[item.id] ? (
-                            <div className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-2 py-1">
+                            <div className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-3 py-1.5">
                               <Button
                                 size="icon"
                                 variant="ghost"
                                 className="h-6 w-6 rounded-full hover:bg-primary-foreground/20"
                                 onClick={() => removeFromCart(item.id)}
                               >
-                                <Minus className="h-3 w-3" />
+                                <Minus className="h-4 w-4" />
                               </Button>
-                              <span className="min-w-6 text-center font-medium">
+                              <span className="min-w-8 text-center font-bold">
                                 {cart[item.id]}
                               </span>
                               <Button
@@ -212,24 +221,19 @@ const Menu = () => {
                                 className="h-6 w-6 rounded-full hover:bg-primary-foreground/20"
                                 onClick={() => addToCart(item.id)}
                               >
-                                <Plus className="h-3 w-3" />
+                                <Plus className="h-4 w-4" />
                               </Button>
                             </div>
                           ) : (
                             <Button
-                              size="sm"
-                              className="rounded-full"
+                              className="rounded-full font-semibold"
                               onClick={() => addToCart(item.id)}
                             >
                               <Plus className="h-4 w-4 mr-1" />
-                              Add
+                              Add to Cart
                             </Button>
                           )
-                        ) : (
-                          <Badge variant="outline" className="text-destructive">
-                            Out of Stock
-                          </Badge>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </Card>
