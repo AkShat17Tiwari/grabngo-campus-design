@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/InputField";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Mail, Lock, Chrome } from "lucide-react";
+import { Mail, Lock, Chrome, User, Phone } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const nameSchema = z.string().min(2, "Name must be at least 2 characters");
+const phoneSchema = z.string().regex(/^[0-9]{10}$/, "Please enter a valid 10-digit phone number");
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,10 +24,18 @@ const Auth = () => {
   const [loginErrors, setLoginErrors] = useState<{ email?: string; password?: string }>({});
 
   // Signup form state
+  const [signupName, setSignupName] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [signupErrors, setSignupErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+  const [signupErrors, setSignupErrors] = useState<{ 
+    name?: string; 
+    phone?: string; 
+    email?: string; 
+    password?: string; 
+    confirmPassword?: string 
+  }>({});
 
   useEffect(() => {
     // Check if user is already logged in
@@ -69,8 +79,30 @@ const Auth = () => {
   };
 
   const validateSignupForm = () => {
-    const errors: { email?: string; password?: string; confirmPassword?: string } = {};
+    const errors: { 
+      name?: string; 
+      phone?: string; 
+      email?: string; 
+      password?: string; 
+      confirmPassword?: string 
+    } = {};
     
+    try {
+      nameSchema.parse(signupName);
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        errors.name = e.errors[0].message;
+      }
+    }
+
+    try {
+      phoneSchema.parse(signupPhone);
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        errors.phone = e.errors[0].message;
+      }
+    }
+
     try {
       emailSchema.parse(signupEmail);
     } catch (e) {
@@ -126,7 +158,11 @@ const Auth = () => {
       email: signupEmail,
       password: signupPassword,
       options: {
-        emailRedirectTo: redirectUrl
+        emailRedirectTo: redirectUrl,
+        data: {
+          full_name: signupName,
+          phone: signupPhone,
+        }
       }
     });
 
@@ -194,6 +230,16 @@ const Auth = () => {
                   required
                 />
 
+                <div className="flex items-center justify-end mb-4">
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:text-primary-light transition-colors"
+                    onClick={() => toast.info("Password reset coming soon!")}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
                 <Button 
                   type="submit" 
                   className="w-full"
@@ -227,6 +273,28 @@ const Auth = () => {
 
             <TabsContent value="signup" className="space-y-4">
               <form onSubmit={handleSignup} className="space-y-4">
+                <InputField
+                  label="Full Name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={signupName}
+                  onChange={(e) => setSignupName(e.target.value)}
+                  error={signupErrors.name}
+                  icon={<User className="w-4 h-4" />}
+                  required
+                />
+
+                <InputField
+                  label="Phone Number"
+                  type="tel"
+                  placeholder="9876543210"
+                  value={signupPhone}
+                  onChange={(e) => setSignupPhone(e.target.value)}
+                  error={signupErrors.phone}
+                  icon={<Phone className="w-4 h-4" />}
+                  required
+                />
+
                 <InputField
                   label="Email"
                   type="email"

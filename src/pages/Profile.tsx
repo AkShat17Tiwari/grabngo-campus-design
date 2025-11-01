@@ -1,4 +1,5 @@
 import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   User,
@@ -10,13 +11,77 @@ import {
   LogOut,
   ChevronRight,
   Clock,
+  Edit,
+  Mail,
+  Phone,
+  Trophy,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { InputField } from "@/components/InputField";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setUser(user);
+      setEditName(user.user_metadata?.full_name || "");
+      setEditPhone(user.user_metadata?.phone || "");
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        full_name: editName,
+        phone: editPhone,
+      }
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Profile updated successfully!");
+      setIsEditDialogOpen(false);
+      loadUserData();
+    }
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Logged out successfully");
+      navigate("/auth");
+    }
+  };
 
   const menuItems = [
     {
@@ -78,30 +143,143 @@ const Profile = () => {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* User Info Card */}
-        <Card className="p-6">
+        <Card className="p-6 animate-fade-in">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <span className="text-3xl font-bold text-white">JD</span>
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
+              <span className="text-3xl font-bold text-white">
+                {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() || "U"}
+              </span>
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold">John Doe</h2>
-              <p className="text-sm text-muted-foreground">
-                john.doe@college.edu
+              <h2 className="text-xl font-bold">
+                {user?.user_metadata?.full_name || "User"}
+              </h2>
+              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                <Mail className="w-3 h-3" />
+                {user?.email || "user@email.com"}
               </p>
-              <p className="text-sm text-muted-foreground">+91 98765 43210</p>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <Phone className="w-3 h-3" />
+                {user?.user_metadata?.phone || "Not provided"}
+              </p>
             </div>
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="icon" variant="outline" className="rounded-full">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md animate-slide-in-right">
+                <DialogHeader>
+                  <DialogTitle>Edit Profile</DialogTitle>
+                  <DialogDescription>
+                    Update your profile information
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <InputField
+                    label="Full Name"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    icon={<User className="w-4 h-4" />}
+                  />
+                  <InputField
+                    label="Phone Number"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    icon={<Phone className="w-4 h-4" />}
+                  />
+                  <Button
+                    onClick={handleUpdateProfile}
+                    disabled={loading}
+                    className="w-full"
+                    variant="gradient"
+                  >
+                    {loading ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <Separator className="my-4" />
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
+            <div className="text-center p-3 rounded-lg bg-primary/10">
               <p className="text-2xl font-bold text-primary">24</p>
               <p className="text-sm text-muted-foreground">Total Orders</p>
             </div>
-            <div className="text-center">
+            <div className="text-center p-3 rounded-lg bg-secondary/10">
               <p className="text-2xl font-bold text-secondary">₹2,450</p>
               <p className="text-sm text-muted-foreground">Total Spent</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Past Orders Section */}
+        <Card className="p-6 animate-fade-in">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Past Orders</h3>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/orders")}>
+              View All
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((order) => (
+              <div
+                key={order}
+                className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <div className="flex-1">
+                  <p className="font-medium">Order #{1000 + order}</p>
+                  <p className="text-sm text-muted-foreground">
+                    The Campus Cafe • 2 items
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(Date.now() - order * 86400000).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">₹{180 + order * 50}</p>
+                  <Badge variant="outline" className="mt-1">
+                    Completed
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* My Rewards Section */}
+        <Card className="p-6 animate-fade-in">
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy className="h-5 w-5 text-secondary" />
+            <h3 className="text-lg font-semibold">My Rewards</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-lg">250 Points</p>
+                  <p className="text-sm text-muted-foreground">
+                    Available Balance
+                  </p>
+                </div>
+                <Trophy className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <p className="text-xl font-bold text-secondary">5</p>
+                <p className="text-xs text-muted-foreground">Active Offers</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <p className="text-xl font-bold text-accent">₹150</p>
+                <p className="text-xs text-muted-foreground">Saved Total</p>
+              </div>
             </div>
           </div>
         </Card>
@@ -135,6 +313,7 @@ const Profile = () => {
         <Button
           variant="outline"
           className="w-full rounded-full h-12 text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={handleLogout}
         >
           <LogOut className="h-4 w-4 mr-2" />
           Logout
