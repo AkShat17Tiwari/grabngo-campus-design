@@ -80,44 +80,56 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 13% 9%;
-    --foreground: 0 0% 98%;
+    /* Deep Dark Background for Eye Comfort */
+    --background: 220 18% 8%;
+    --foreground: 220 10% 85%;
 
-    --card: 220 13% 12%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 16% 11%;
+    --card-foreground: 220 10% 88%;
 
-    --popover: 220 13% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 16% 11%;
+    --popover-foreground: 220 10% 88%;
 
-    --primary: 27 96% 61%;
-    --primary-light: 27 96% 71%;
-    --primary-dark: 27 96% 51%;
-    --primary-foreground: 0 0% 100%;
+    /* Muted Deep Cyan (Primary) - Soothing Accent */
+    --primary: 190 45% 48%;
+    --primary-light: 190 45% 58%;
+    --primary-dark: 190 45% 38%;
+    --primary-foreground: 220 16% 11%;
 
-    --secondary: 142 76% 36%;
-    --secondary-light: 142 76% 46%;
-    --secondary-foreground: 0 0% 100%;
+    /* Soft Purple (Secondary) - Elegant Touch */
+    --secondary: 270 35% 52%;
+    --secondary-light: 270 35% 62%;
+    --secondary-foreground: 220 16% 11%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
+    /* Desaturated Accent */
+    --accent: 240 25% 45%;
+    --accent-foreground: 220 10% 88%;
 
-    --muted: 220 13% 16%;
-    --muted-foreground: 220 9% 60%;
+    --muted: 220 14% 15%;
+    --muted-foreground: 220 10% 65%;
 
-    --destructive: 0 72% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 60% 48%;
+    --destructive-foreground: 220 10% 88%;
 
-    --border: 220 13% 20%;
-    --input: 220 13% 20%;
-    --ring: 27 96% 61%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 220 14% 18%;
+    --input: 220 14% 18%;
+    --ring: 190 45% 48%;
+    
+    /* Shadows for Dark Mode */
+    --shadow-sm: 0 1px 2px 0 hsl(220 20% 5% / 0.3);
+    --shadow-md: 0 4px 6px -1px hsl(220 20% 5% / 0.4), 0 2px 4px -2px hsl(220 20% 5% / 0.3);
+    --shadow-lg: 0 10px 15px -3px hsl(220 20% 5% / 0.5), 0 4px 6px -4px hsl(220 20% 5% / 0.4);
+    --shadow-xl: 0 20px 25px -5px hsl(220 20% 5% / 0.6), 0 8px 10px -6px hsl(220 20% 5% / 0.5);
+    --shadow-glow: 0 0 20px hsl(190 45% 48% / 0.3), 0 0 40px hsl(190 45% 48% / 0.15);
+    
+    --sidebar-background: 220 18% 9%;
+    --sidebar-foreground: 220 10% 85%;
+    --sidebar-primary: 190 45% 48%;
+    --sidebar-primary-foreground: 220 16% 11%;
+    --sidebar-accent: 220 14% 14%;
+    --sidebar-accent-foreground: 220 10% 85%;
+    --sidebar-border: 220 14% 16%;
+    --sidebar-ring: 190 45% 48%;
   }
 }
 

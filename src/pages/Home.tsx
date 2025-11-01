@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OutletCard } from "@/components/OutletCard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const outlets = [
   {
@@ -115,6 +116,7 @@ const Home = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              <ThemeToggle />
               <Link to="/vendor">
                 <Button variant="outline" size="sm" className="hidden md:flex">
                   Staff Console

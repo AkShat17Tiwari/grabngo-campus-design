@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface FoodItemCardProps {
   id: number;
@@ -31,10 +33,25 @@ export const FoodItemCard = ({
   onRemove,
   className,
 }: FoodItemCardProps) => {
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAdd = () => {
+    // Trigger micro-interaction animation
+    setIsAdding(true);
+    setTimeout(() => setIsAdding(false), 300);
+    
+    if (quantity === 0) {
+      toast.success(`${name} added to cart!`, {
+        duration: 2000,
+      });
+    }
+    onAdd(id);
+  };
+
   return (
     <Card
       className={cn(
-        "p-4 flex gap-4 hover:shadow-md transition-shadow group",
+        "p-4 flex gap-4 transition-all duration-300 ease-out hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] animate-fade-in-up group",
         !inStock && "opacity-60",
         className
       )}
@@ -83,7 +100,7 @@ export const FoodItemCard = ({
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-6 w-6 rounded-full hover:bg-primary-foreground/20 text-primary-foreground"
+                  className="h-6 w-6 rounded-full hover:bg-primary-foreground/20 text-primary-foreground transition-all duration-200 ease-out hover:scale-110"
                   onClick={() => onRemove(id)}
                 >
                   <Minus className="h-3 w-3" />
@@ -94,8 +111,11 @@ export const FoodItemCard = ({
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-6 w-6 rounded-full hover:bg-primary-foreground/20 text-primary-foreground"
-                  onClick={() => onAdd(id)}
+                  className={cn(
+                    "h-6 w-6 rounded-full hover:bg-primary-foreground/20 text-primary-foreground transition-all duration-200 ease-out hover:scale-110",
+                    isAdding && "scale-90 bg-secondary"
+                  )}
+                  onClick={handleAdd}
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
@@ -103,8 +123,11 @@ export const FoodItemCard = ({
             ) : (
               <Button
                 size="sm"
-                className="rounded-full font-medium"
-                onClick={() => onAdd(id)}
+                className={cn(
+                  "rounded-full font-medium transition-all duration-200 ease-out hover:shadow-lg hover:scale-[1.05]",
+                  isAdding && "scale-95 bg-secondary"
+                )}
+                onClick={handleAdd}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add

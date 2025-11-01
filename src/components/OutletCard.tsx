@@ -30,7 +30,7 @@ export const OutletCard = ({
     <Link to={`/menu/${id}`}>
       <div
         className={cn(
-          "bg-card rounded-2xl overflow-hidden border hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group",
+          "bg-card rounded-2xl overflow-hidden border transition-all duration-300 ease-out hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] animate-fade-in-up group",
           className
         )}
       >
