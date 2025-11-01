@@ -1,10 +1,10 @@
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Clock, MapPin, Package, CheckCircle2, ChefHat } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, CheckCircle2, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
+import { OrderStatusAnimation } from "@/components/OrderStatusAnimation";
 
 interface Order {
   id: string;
@@ -13,7 +13,7 @@ interface Order {
   total: number;
   status: "placed" | "preparing" | "ready" | "completed";
   orderTime: string;
-  pickupTime: string;
+  estimatedTime: string;
 }
 
 const orders: Order[] = [
@@ -24,7 +24,7 @@ const orders: Order[] = [
     total: 605,
     status: "preparing",
     orderTime: "2:10 PM",
-    pickupTime: "2:30 PM",
+    estimatedTime: "2:30 PM",
   },
   {
     id: "ORD-2400",
@@ -33,7 +33,7 @@ const orders: Order[] = [
     total: 399,
     status: "ready",
     orderTime: "1:20 PM",
-    pickupTime: "1:40 PM",
+    estimatedTime: "1:40 PM",
   },
   {
     id: "ORD-2399",
@@ -42,7 +42,7 @@ const orders: Order[] = [
     total: 249,
     status: "completed",
     orderTime: "12:30 PM",
-    pickupTime: "12:50 PM",
+    estimatedTime: "12:50 PM",
   },
   {
     id: "ORD-2398",
@@ -51,55 +51,31 @@ const orders: Order[] = [
     total: 179,
     status: "placed",
     orderTime: "2:45 PM",
-    pickupTime: "3:05 PM",
+    estimatedTime: "3:05 PM",
   },
 ];
 
 const statusConfig = {
   placed: {
     label: "Order Placed",
-    icon: Package,
+    icon: ChefHat,
     color: "bg-accent/20 text-accent-foreground",
-    iconColor: "text-accent-foreground",
-    progress: 25,
   },
   preparing: {
     label: "Preparing",
     icon: ChefHat,
     color: "bg-primary/10 text-primary",
-    iconColor: "text-primary",
-    progress: 50,
   },
   ready: {
     label: "Ready for Pickup",
     icon: CheckCircle2,
     color: "bg-secondary/10 text-secondary",
-    iconColor: "text-secondary",
-    progress: 75,
   },
   completed: {
     label: "Completed",
     icon: CheckCircle2,
     color: "bg-muted text-muted-foreground",
-    iconColor: "text-muted-foreground",
-    progress: 100,
   },
-};
-
-const getStatusSteps = (currentStatus: Order["status"]) => {
-  const steps = [
-    { status: "placed", label: "Placed" },
-    { status: "preparing", label: "Preparing" },
-    { status: "ready", label: "Ready" },
-    { status: "completed", label: "Completed" },
-  ];
-  
-  const currentIndex = steps.findIndex((s) => s.status === currentStatus);
-  return steps.map((step, index) => ({
-    ...step,
-    isActive: index <= currentIndex,
-    isCurrent: index === currentIndex,
-  }));
 };
 
 const Orders = () => {
@@ -128,7 +104,6 @@ const Orders = () => {
         {orders.map((order) => {
           const config = statusConfig[order.status];
           const StatusIcon = config.icon;
-          const statusSteps = getStatusSteps(order.status);
 
           return (
             <Card key={order.id} className="p-5 hover:shadow-lg transition-all duration-300 border-2">
@@ -146,58 +121,11 @@ const Orders = () => {
                 </Badge>
               </div>
 
-              {/* Visual Progress Bar */}
-              <div className="mb-4 bg-muted/30 p-4 rounded-lg">
-                <div className="mb-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-foreground">Order Status</span>
-                    <span className="text-xs text-muted-foreground">{config.progress}% Complete</span>
-                  </div>
-                  <Progress value={config.progress} className="h-2" />
-                </div>
-                
-                {/* Status Steps */}
-                <div className="grid grid-cols-4 gap-2 mt-4">
-                  {statusSteps.map((step) => (
-                    <div
-                      key={step.status}
-                      className={`text-center transition-all ${
-                        step.isActive
-                          ? "opacity-100"
-                          : "opacity-40"
-                      }`}
-                    >
-                      <div
-                        className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center mb-1 ${
-                          step.isActive
-                            ? step.isCurrent
-                              ? "bg-primary text-primary-foreground animate-pulse"
-                              : "bg-secondary text-secondary-foreground"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {step.isActive && <CheckCircle2 className="h-4 w-4" />}
-                      </div>
-                      <p className={`text-xs font-medium ${
-                        step.isCurrent ? "text-primary" : "text-muted-foreground"
-                      }`}>
-                        {step.label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Estimated Pickup Time */}
-              {order.status !== "completed" && (
-                <div className="bg-secondary/10 p-3 rounded-lg mb-3 flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-secondary" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Estimated Pickup Time</p>
-                    <p className="text-lg font-bold text-secondary">{order.pickupTime}</p>
-                  </div>
-                </div>
-              )}
+              {/* Enhanced Order Status Animation */}
+              <OrderStatusAnimation 
+                currentStatus={order.status}
+                estimatedTime={order.estimatedTime}
+              />
 
               {/* Order Items */}
               <div className="mb-3">

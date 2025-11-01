@@ -122,6 +122,23 @@ export default {
             opacity: "0.5"
           }
         },
+        "bell-shake": {
+          "0%, 100%": {
+            transform: "rotate(0deg)",
+          },
+          "10%, 30%, 50%, 70%": {
+            transform: "rotate(-15deg)",
+          },
+          "20%, 40%, 60%": {
+            transform: "rotate(15deg)",
+          },
+          "80%": {
+            transform: "rotate(-8deg)",
+          },
+          "90%": {
+            transform: "rotate(8deg)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -130,6 +147,7 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "slide-up": "slide-up 0.4s ease-out",
         "pulse-slow": "pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "bell-shake": "bell-shake 1s cubic-bezier(0.36, 0.07, 0.19, 0.97) both",
       },
     },
   },
