@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Clock, MapPin, CheckCircle2, ChefHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -5,81 +6,73 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { OrderStatusAnimation } from "@/components/OrderStatusAnimation";
+import { useRealtimeUserOrders } from "@/hooks/useRealtimeOrders";
+import { supabase } from "@/integrations/supabase/client";
 
-interface Order {
-  id: string;
-  outletName: string;
-  items: string[];
-  total: number;
-  status: "placed" | "preparing" | "ready" | "completed";
-  orderTime: string;
-  estimatedTime: string;
-}
-
-const orders: Order[] = [
-  {
-    id: "ORD-2401",
-    outletName: "Campus Café",
-    items: ["Classic Burger x2", "Margherita Pizza x1", "French Fries x2"],
-    total: 605,
-    status: "preparing",
-    orderTime: "2:10 PM",
-    estimatedTime: "2:30 PM",
-  },
-  {
-    id: "ORD-2400",
-    outletName: "Pizza Paradise",
-    items: ["Pepperoni Pizza x1", "Garlic Bread x2"],
-    total: 399,
-    status: "ready",
-    orderTime: "1:20 PM",
-    estimatedTime: "1:40 PM",
-  },
-  {
-    id: "ORD-2399",
-    outletName: "Healthy Bites",
-    items: ["Caesar Salad x1", "Green Smoothie x1"],
-    total: 249,
-    status: "completed",
-    orderTime: "12:30 PM",
-    estimatedTime: "12:50 PM",
-  },
-  {
-    id: "ORD-2398",
-    outletName: "Burger Hub",
-    items: ["Veggie Burger x1", "Fries x1"],
-    total: 179,
-    status: "placed",
-    orderTime: "2:45 PM",
-    estimatedTime: "3:05 PM",
-  },
-];
+interface ItemsMap { [orderId: string]: string[] }
+interface OutletsMap { [outletId: number]: string }
 
 const statusConfig = {
-  placed: {
-    label: "Order Placed",
-    icon: ChefHat,
-    color: "bg-accent/20 text-accent-foreground",
-  },
-  preparing: {
-    label: "Preparing",
-    icon: ChefHat,
-    color: "bg-primary/10 text-primary",
-  },
-  ready: {
-    label: "Ready for Pickup",
-    icon: CheckCircle2,
-    color: "bg-secondary/10 text-secondary",
-  },
-  completed: {
-    label: "Completed",
-    icon: CheckCircle2,
-    color: "bg-muted text-muted-foreground",
-  },
+  placed: { label: "Order Placed", icon: ChefHat, color: "bg-accent/20 text-accent-foreground" },
+  preparing: { label: "Preparing", icon: ChefHat, color: "bg-primary/10 text-primary" },
+  ready: { label: "Ready for Pickup", icon: CheckCircle2, color: "bg-secondary/10 text-secondary" },
+  completed: { label: "Completed", icon: CheckCircle2, color: "bg-muted text-muted-foreground" },
 };
 
 const Orders = () => {
   const navigate = useNavigate();
+  const { orders, loading } = useRealtimeUserOrders();
+  const [itemsMap, setItemsMap] = useState<ItemsMap>({});
+  const [outletsMap, setOutletsMap] = useState<OutletsMap>({});
+
+  useEffect(() => {
+    const loadDetails = async () => {
+      if (!orders || orders.length === 0) return;
+      const orderIds = orders.map((o) => o.id);
+      const outletIds = Array.from(new Set(orders.map((o) => o.outlet_id)));
+
+      const [{ data: items }, { data: outlets }] = await Promise.all([
+        supabase
+          .from('order_items')
+          .select('order_id,item_name,quantity')
+          .in('order_id', orderIds),
+        supabase
+          .from('outlets')
+          .select('id,name')
+          .in('id', outletIds)
+      ]);
+
+      // Build items map
+      const itemAgg: ItemsMap = {};
+      (items || []).forEach((row) => {
+        const key = row.order_id as string;
+        const itemStr = `${row.item_name} x${row.quantity}`;
+        itemAgg[key] = [...(itemAgg[key] || []), itemStr];
+      });
+      setItemsMap(itemAgg);
+
+      // Build outlets map
+      const outletAgg: OutletsMap = {};
+      (outlets || []).forEach((o) => {
+        outletAgg[o.id as number] = o.name as string;
+      });
+      setOutletsMap(outletAgg);
+    };
+    loadDetails();
+  }, [orders]);
+
+  const formattedOrders = useMemo(() => orders || [], [orders]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your orders...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -101,19 +94,23 @@ const Orders = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-4">
-        {orders.map((order) => {
+        {formattedOrders.map((order) => {
           const config = statusConfig[order.status];
           const StatusIcon = config.icon;
+          const outletName = outletsMap[order.outlet_id] || "Outlet";
+          const items = itemsMap[order.id] || [];
+          const orderTime = new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const estimatedTime = order.estimated_pickup_time
+            ? new Date(order.estimated_pickup_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : "--";
 
           return (
             <Card key={order.id} className="p-5 hover:shadow-lg transition-all duration-300 border-2">
               {/* Order Header */}
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="font-bold text-lg">{order.outletName}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Order #{order.id}
-                  </p>
+                  <h3 className="font-bold text-lg">{outletName}</h3>
+                  <p className="text-sm text-muted-foreground">Order #{order.id}</p>
                 </div>
                 <Badge className={`${config.color} px-3 py-1`}>
                   <StatusIcon className="h-4 w-4 mr-1" />
@@ -122,19 +119,18 @@ const Orders = () => {
               </div>
 
               {/* Enhanced Order Status Animation */}
-              <OrderStatusAnimation 
-                currentStatus={order.status}
-                estimatedTime={order.estimatedTime}
-              />
+              <OrderStatusAnimation currentStatus={order.status} estimatedTime={estimatedTime} />
 
               {/* Order Items */}
               <div className="mb-3">
                 <h4 className="font-semibold text-sm mb-2">Items:</h4>
-                {order.items.map((item, index) => (
-                  <p key={index} className="text-sm text-muted-foreground pl-2">
-                    • {item}
-                  </p>
-                ))}
+                {items.length === 0 ? (
+                  <p className="text-sm text-muted-foreground pl-2">No items found</p>
+                ) : (
+                  items.map((item, index) => (
+                    <p key={index} className="text-sm text-muted-foreground pl-2">• {item}</p>
+                  ))
+                )}
               </div>
 
               <Separator className="my-3" />
@@ -144,7 +140,7 @@ const Orders = () => {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    <span>Ordered at {order.orderTime}</span>
+                    <span>Ordered at {orderTime}</span>
                   </div>
                 </div>
                 <span className="font-bold text-lg text-primary">₹{order.total}</span>

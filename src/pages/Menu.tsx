@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,99 +13,74 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MenuItem {
   id: number;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
-  image: string;
-  category: string;
-  isVeg: boolean;
-  inStock: boolean;
+  image_url: string | null;
+  category: string | null;
+  is_veg: boolean | null;
+  in_stock: boolean | null;
 }
 
-const menuItems: MenuItem[] = [
-  {
-    id: 1,
-    name: "Classic Burger",
-    description: "Juicy beef patty with fresh vegetables",
-    price: 149,
-    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop",
-    category: "Burgers",
-    isVeg: false,
-    inStock: true,
-  },
-  {
-    id: 2,
-    name: "Margherita Pizza",
-    description: "Fresh mozzarella, tomatoes, and basil",
-    price: 199,
-    image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&auto=format&fit=crop",
-    category: "Pizza",
-    isVeg: true,
-    inStock: true,
-  },
-  {
-    id: 3,
-    name: "Caesar Salad",
-    description: "Crisp romaine with parmesan and croutons",
-    price: 129,
-    image: "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&auto=format&fit=crop",
-    category: "Salads",
-    isVeg: true,
-    inStock: true,
-  },
-  {
-    id: 4,
-    name: "Chicken Wings",
-    description: "Spicy buffalo wings with ranch dip",
-    price: 179,
-    image: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=400&auto=format&fit=crop",
-    category: "Appetizers",
-    isVeg: false,
-    inStock: false,
-  },
-  {
-    id: 5,
-    name: "French Fries",
-    description: "Golden crispy fries with seasoning",
-    price: 79,
-    image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&auto=format&fit=crop",
-    category: "Sides",
-    isVeg: true,
-    inStock: true,
-  },
-  {
-    id: 6,
-    name: "Chocolate Shake",
-    description: "Thick and creamy chocolate milkshake",
-    price: 99,
-    image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&auto=format&fit=crop",
-    category: "Beverages",
-    isVeg: true,
-    inStock: true,
-  },
-];
+interface Outlet {
+  id: number;
+  name: string;
+  cuisine: string | null;
+  rating: number | null;
+  distance: string | null;
+  estimated_time: string | null;
+  image_url: string | null;
+}
+
 
 const Menu = () => {
   const { outletId } = useParams();
   const navigate = useNavigate();
   const [cart, setCart] = useState<{ [key: number]: number }>({});
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [outlet, setOutlet] = useState<Outlet | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const outletNum = Number(outletId);
+        if (!outletNum) throw new Error('Invalid outlet');
+
+        const [{ data: outletData, error: outletError }, { data: itemsData, error: itemsError }] = await Promise.all([
+          supabase.from('outlets').select('*').eq('id', outletNum).single(),
+          supabase.from('menu_items').select('*').eq('outlet_id', outletNum).order('category', { ascending: true })
+        ]);
+
+        if (outletError) throw outletError;
+        if (itemsError) throw itemsError;
+
+        setOutlet(outletData as Outlet);
+        setMenuItems((itemsData || []) as MenuItem[]);
+      } catch (e) {
+        console.error(e);
+        toast.error('Failed to load menu');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [outletId]);
 
   const addToCart = (itemId: number) => {
     setCart((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
-    toast.success("Added to cart");
+    toast.success('Added to cart');
   };
 
   const removeFromCart = (itemId: number) => {
     setCart((prev) => {
       const newCart = { ...prev };
-      if (newCart[itemId] > 1) {
-        newCart[itemId]--;
-      } else {
-        delete newCart[itemId];
-      }
+      if (newCart[itemId] > 1) newCart[itemId]--;
+      else delete newCart[itemId];
       return newCart;
     });
   };
@@ -116,7 +91,18 @@ const Menu = () => {
     return sum + (item?.price || 0) * count;
   }, 0);
 
-  const categories = Array.from(new Set(menuItems.map((item) => item.category)));
+  const categories = Array.from(new Set(menuItems.map((item) => item.category || 'Other')));
+
+  if (loading || !outlet) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading menu...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -133,19 +119,19 @@ const Menu = () => {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex-1">
-              <h1 className="text-xl font-bold">Campus Café</h1>
+              <h1 className="text-xl font-bold">{outlet?.name}</h1>
               <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                 <div className="flex items-center gap-1">
                   <Star className="h-3 w-3 fill-secondary text-secondary" />
-                  <span>4.5</span>
+                  <span>{Number(outlet?.rating ?? 0).toFixed(1)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  <span>10-15 min</span>
+                  <span>{outlet?.estimated_time || "--"}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
-                  <span>100m</span>
+                  <span>{outlet?.distance || "--"}</span>
                 </div>
               </div>
             </div>
@@ -169,12 +155,12 @@ const Menu = () => {
                     {/* Item Image - Prominent placeholder */}
                     <div className="relative h-48 w-full bg-muted">
                       <img
-                        src={item.image}
+                        src={item.image_url || "/placeholder.svg"}
                         alt={item.name}
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      {!item.inStock && (
+                      {!item.in_stock && (
                         <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                           <Badge variant="outline" className="text-destructive border-destructive">
                             Out of Stock
@@ -182,7 +168,7 @@ const Menu = () => {
                         </div>
                       )}
                       <Badge
-                        variant={item.isVeg ? "secondary" : "destructive"}
+                        variant={item.is_veg ? "secondary" : "destructive"}
                         className="absolute top-2 left-2 h-5 w-5 p-0 flex items-center justify-center"
                       >
                         <div className="w-2.5 h-2.5 rounded-full bg-current" />
@@ -201,7 +187,7 @@ const Menu = () => {
                         <span className="font-bold text-xl text-primary">
                           ₹{item.price}
                         </span>
-                        {item.inStock ? (
+                        {item.in_stock ? (
                           cart[item.id] ? (
                             <div className="flex items-center gap-2 bg-primary text-primary-foreground rounded-full px-3 py-1.5">
                               <Button
