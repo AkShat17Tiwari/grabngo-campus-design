@@ -1,90 +1,63 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, MapPin, Clock, Star, ShoppingCart, TrendingUp, Zap } from "lucide-react";
+import { Search, MapPin, Clock, ShoppingCart, TrendingUp, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OutletCard } from "@/components/OutletCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-const outlets = [
-  {
-    id: 1,
-    name: "Campus Café",
-    cuisine: "Coffee & Snacks",
-    rating: 4.5,
-    distance: "100m",
-    time: "10-15 min",
-    image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&auto=format&fit=crop",
-    isOpen: true,
-    description: "Fresh coffee, pastries, and quick bites",
-    popular: true,
-  },
-  {
-    id: 2,
-    name: "Pizza Paradise",
-    cuisine: "Italian",
-    rating: 4.7,
-    distance: "250m",
-    time: "15-20 min",
-    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop",
-    isOpen: true,
-    description: "Wood-fired pizzas and pasta",
-    popular: true,
-  },
-  {
-    id: 3,
-    name: "Burger Junction",
-    cuisine: "American",
-    rating: 4.3,
-    distance: "180m",
-    time: "12-18 min",
-    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop",
-    isOpen: true,
-    description: "Gourmet burgers and loaded fries",
-    popular: false,
-  },
-  {
-    id: 4,
-    name: "Asian Delight",
-    cuisine: "Chinese & Thai",
-    rating: 4.6,
-    distance: "320m",
-    time: "20-25 min",
-    image: "https://images.unsplash.com/photo-1617093727343-374698b1b08d?w=800&auto=format&fit=crop",
-    isOpen: false,
-    description: "Authentic Asian cuisine and dim sum",
-    popular: false,
-  },
-  {
-    id: 5,
-    name: "Healthy Bites",
-    cuisine: "Salads & Bowls",
-    rating: 4.8,
-    distance: "150m",
-    time: "10-12 min",
-    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop",
-    isOpen: true,
-    description: "Fresh salads, smoothies, and protein bowls",
-    popular: true,
-  },
-  {
-    id: 6,
-    name: "Taco Fiesta",
-    cuisine: "Mexican",
-    rating: 4.4,
-    distance: "290m",
-    time: "18-22 min",
-    image: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&auto=format&fit=crop",
-    isOpen: true,
-    description: "Tacos, burritos, and quesadillas",
-    popular: false,
-  },
-];
+interface Outlet {
+  id: number;
+  name: string;
+  cuisine: string;
+  rating: number;
+  distance: string;
+  estimated_time: string;
+  image_url: string;
+  is_open: boolean;
+  description: string;
+}
 
 const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [cartCount] = useState(3);
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOutlets();
+  }, []);
+
+  const fetchOutlets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('outlets')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+
+      setOutlets(data.map(outlet => ({
+        id: outlet.id,
+        name: outlet.name,
+        cuisine: outlet.cuisine || '',
+        rating: Number(outlet.rating) || 0,
+        distance: outlet.distance || '',
+        estimated_time: outlet.estimated_time || '',
+        image_url: outlet.image_url || '',
+        is_open: outlet.is_open ?? true,
+        description: outlet.description || ''
+      })));
+    } catch (error) {
+      console.error('Error fetching outlets:', error);
+      toast.error('Failed to load outlets');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredOutlets = outlets.filter(
     (outlet) =>
@@ -93,8 +66,19 @@ const Home = () => {
       outlet.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const openOutlets = filteredOutlets.filter(o => o.isOpen);
-  const closedOutlets = filteredOutlets.filter(o => !o.isOpen);
+  const openOutlets = filteredOutlets.filter(o => o.is_open);
+  const closedOutlets = filteredOutlets.filter(o => !o.is_open);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading outlets...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -183,13 +167,16 @@ const Home = () => {
                   className="animate-slide-up"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <OutletCard {...outlet} />
-                  {outlet.popular && (
-                    <Badge className="mt-2 bg-primary/10 text-primary border-primary/20">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      Popular Choice
-                    </Badge>
-                  )}
+                  <OutletCard 
+                    id={outlet.id}
+                    name={outlet.name}
+                    cuisine={outlet.cuisine}
+                    rating={outlet.rating}
+                    distance={outlet.distance}
+                    time={outlet.estimated_time}
+                    image={outlet.image_url}
+                    isOpen={outlet.is_open}
+                  />
                 </div>
               ))}
             </div>
@@ -210,7 +197,17 @@ const Home = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {closedOutlets.map((outlet) => (
-                <OutletCard key={outlet.id} {...outlet} />
+                <OutletCard 
+                  key={outlet.id}
+                  id={outlet.id}
+                  name={outlet.name}
+                  cuisine={outlet.cuisine}
+                  rating={outlet.rating}
+                  distance={outlet.distance}
+                  time={outlet.estimated_time}
+                  image={outlet.image_url}
+                  isOpen={outlet.is_open}
+                />
               ))}
             </div>
           </section>
