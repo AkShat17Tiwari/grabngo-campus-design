@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, Clock, User, Package, CheckCircle2, AlertCircle, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,110 +6,84 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useRealtimeOutletOrders, type Order } from "@/hooks/useRealtimeOrders";
+import { supabase } from "@/integrations/supabase/client";
 
-interface Order {
-  id: string;
-  customerName: string;
-  items: { name: string; quantity: number }[];
-  total: number;
-  status: "new" | "preparing" | "ready";
-  orderTime: string;
-  specialInstructions?: string;
-}
+interface ItemsMap { [orderId: string]: { name: string; quantity: number }[] }
+
+type VendorOrderStatus = 'placed' | 'preparing' | 'ready';
 
 const VendorConsole = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: "ORD-2405",
-      customerName: "John Doe",
-      items: [
-        { name: "Classic Burger", quantity: 2 },
-        { name: "French Fries", quantity: 1 },
-      ],
-      total: 377,
-      status: "new",
-      orderTime: "2:45 PM",
-      specialInstructions: "Extra cheese, no onions",
-    },
-    {
-      id: "ORD-2404",
-      customerName: "Sarah Smith",
-      items: [
-        { name: "Margherita Pizza", quantity: 1 },
-        { name: "Garlic Bread", quantity: 1 },
-      ],
-      total: 299,
-      status: "new",
-      orderTime: "2:43 PM",
-    },
-    {
-      id: "ORD-2403",
-      customerName: "Mike Johnson",
-      items: [
-        { name: "Caesar Salad", quantity: 1 },
-        { name: "Green Smoothie", quantity: 1 },
-      ],
-      total: 249,
-      status: "preparing",
-      orderTime: "2:40 PM",
-    },
-    {
-      id: "ORD-2402",
-      customerName: "Emily Brown",
-      items: [
-        { name: "Chicken Wings", quantity: 2 },
-        { name: "Chocolate Shake", quantity: 1 },
-      ],
-      total: 457,
-      status: "preparing",
-      orderTime: "2:38 PM",
-    },
-  ]);
+  const [outletId, setOutletId] = useState<number | null>(null);
+  const [outletName, setOutletName] = useState<string>("");
+  const { orders: rawOrders, loading } = useRealtimeOutletOrders(outletId);
+  const [itemsMap, setItemsMap] = useState<ItemsMap>({});
 
-  const handleStartPreparing = (orderId: string) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status: "preparing" as const } : order
-      )
-    );
-    toast.success("Order moved to preparing");
+  useEffect(() => {
+    // For demo, using first outlet. In production, determine outlet from user role
+    const loadOutlet = async () => {
+      const { data } = await supabase.from('outlets').select('id,name').limit(1).single();
+      if (data) {
+        setOutletId(data.id);
+        setOutletName(data.name);
+      }
+    };
+    loadOutlet();
+  }, []);
+
+  useEffect(() => {
+    const loadItems = async () => {
+      if (!rawOrders || rawOrders.length === 0) return;
+      const orderIds = rawOrders.map((o) => o.id);
+      const { data } = await supabase
+        .from('order_items')
+        .select('order_id,item_name,quantity')
+        .in('order_id', orderIds);
+
+      const agg: ItemsMap = {};
+      (data || []).forEach((row) => {
+        const key = row.order_id as string;
+        agg[key] = [...(agg[key] || []), { name: row.item_name as string, quantity: row.quantity as number }];
+      });
+      setItemsMap(agg);
+    };
+    loadItems();
+  }, [rawOrders]);
+
+  const handleStartPreparing = async (orderId: string) => {
+    const { error } = await supabase.functions.invoke('update-order-status', {
+      body: { orderId, newStatus: 'preparing' }
+    });
+    if (error) toast.error('Failed to update order');
+    else toast.success('Order moved to preparing');
   };
 
-  const handleMarkReady = (orderId: string) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status: "ready" as const } : order
-      )
-    );
-    toast.success("Order marked as ready for pickup");
+  const handleMarkReady = async (orderId: string) => {
+    const { error } = await supabase.functions.invoke('update-order-status', {
+      body: { orderId, newStatus: 'ready' }
+    });
+    if (error) toast.error('Failed to update order');
+    else toast.success('Order marked as ready');
   };
 
-  const newOrders = orders.filter((o) => o.status === "new");
-  const preparingOrders = orders.filter((o) => o.status === "preparing");
-  const readyOrders = orders.filter((o) => o.status === "ready");
+  const orders = useMemo(() => rawOrders || [], [rawOrders]);
+  const newOrders = orders.filter((o) => o.status === 'placed');
+  const preparingOrders = orders.filter((o) => o.status === 'preparing');
+  const readyOrders = orders.filter((o) => o.status === 'ready');
 
   const OrderCard = ({ order }: { order: Order }) => {
-    const statusConfig = {
-      new: {
-        badge: "NEW",
-        badgeClass: "bg-primary text-primary-foreground",
-        icon: AlertCircle,
-      },
-      preparing: {
-        badge: "PREPARING",
-        badgeClass: "bg-accent text-accent-foreground",
-        icon: Package,
-      },
-      ready: {
-        badge: "READY",
-        badgeClass: "bg-secondary text-secondary-foreground",
-        icon: CheckCircle2,
-      },
+    const statusConfig: Record<VendorOrderStatus, { badge: string; badgeClass: string; icon: typeof AlertCircle }> = {
+      placed: { badge: "NEW", badgeClass: "bg-primary text-primary-foreground", icon: AlertCircle },
+      preparing: { badge: "PREPARING", badgeClass: "bg-accent text-accent-foreground", icon: Package },
+      ready: { badge: "READY", badgeClass: "bg-secondary text-secondary-foreground", icon: CheckCircle2 },
     };
 
-    const config = statusConfig[order.status];
+    const vendorStatus = (order.status === 'placed' ? 'placed' : order.status) as VendorOrderStatus;
+    const config = statusConfig[vendorStatus];
     const StatusIcon = config.icon;
+    const items = itemsMap[order.id] || [];
+    const orderTime = new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return (
       <Card className="p-6 border-2 hover:shadow-xl transition-all duration-200">
@@ -117,7 +91,7 @@ const VendorConsole = () => {
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-2xl font-display font-bold">{order.id}</h3>
+              <h3 className="text-2xl font-display font-bold">{order.id.slice(0, 8)}</h3>
               <Badge className={`${config.badgeClass} text-sm px-3 py-1 font-bold`}>
                 <StatusIcon className="h-4 w-4 mr-1" />
                 {config.badge}
@@ -125,10 +99,10 @@ const VendorConsole = () => {
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <User className="h-4 w-4" />
-              <span className="font-medium">{order.customerName}</span>
+              <span className="font-medium">{order.customer_name}</span>
               <Separator orientation="vertical" className="h-4" />
               <Clock className="h-4 w-4" />
-              <span>{order.orderTime}</span>
+              <span>{orderTime}</span>
             </div>
           </div>
           <div className="text-right">
@@ -143,23 +117,25 @@ const VendorConsole = () => {
           <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
             Items
           </h4>
-          {order.items.map((item, index) => (
-            <div key={index} className="flex justify-between items-center py-2">
-              <span className="font-medium text-lg">
-                {item.name}
-              </span>
-              <Badge variant="outline" className="text-base px-3 py-1">
-                x{item.quantity}
-              </Badge>
-            </div>
-          ))}
+          {items.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No items found</p>
+          ) : (
+            items.map((item, index) => (
+              <div key={index} className="flex justify-between items-center py-2">
+                <span className="font-medium text-lg">{item.name}</span>
+                <Badge variant="outline" className="text-base px-3 py-1">
+                  x{item.quantity}
+                </Badge>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Special Instructions */}
-        {order.specialInstructions && (
+        {order.special_instructions && (
           <div className="mb-4 p-3 bg-muted rounded-lg">
             <p className="text-sm font-semibold mb-1">Special Instructions:</p>
-            <p className="text-sm text-muted-foreground">{order.specialInstructions}</p>
+            <p className="text-sm text-muted-foreground">{order.special_instructions}</p>
           </div>
         )}
 
@@ -167,7 +143,7 @@ const VendorConsole = () => {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          {order.status === "new" && (
+          {order.status === "placed" && (
             <Button
               size="lg"
               className="flex-1 h-14 text-lg font-semibold"
@@ -199,6 +175,17 @@ const VendorConsole = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading orders...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-muted/30">
       {/* High Contrast Header */}
@@ -215,7 +202,7 @@ const VendorConsole = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-3xl font-display font-bold">Campus Café</h1>
+                <h1 className="text-3xl font-display font-bold">{outletName || "Vendor Console"}</h1>
                 <p className="text-sm text-muted-foreground">Staff Console</p>
               </div>
             </div>

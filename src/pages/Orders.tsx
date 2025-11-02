@@ -119,7 +119,17 @@ const Orders = () => {
               </div>
 
               {/* Enhanced Order Status Animation */}
-              <OrderStatusAnimation currentStatus={order.status} estimatedTime={estimatedTime} />
+              {order.status !== 'cancelled' && (
+                <OrderStatusAnimation 
+                  currentStatus={order.status as 'placed' | 'preparing' | 'ready' | 'completed'} 
+                  estimatedTime={estimatedTime} 
+                />
+              )}
+              {order.status === 'cancelled' && (
+                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
+                  <p className="text-sm text-destructive font-medium">This order was cancelled</p>
+                </div>
+              )}
 
               {/* Order Items */}
               <div className="mb-3">

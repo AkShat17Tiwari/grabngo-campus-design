@@ -204,83 +204,10 @@ const Profile = () => {
 
           <Separator className="my-4" />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-3 rounded-lg bg-primary/10">
-              <p className="text-2xl font-bold text-primary">24</p>
-              <p className="text-sm text-muted-foreground">Total Orders</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-secondary/10">
-              <p className="text-2xl font-bold text-secondary">₹2,450</p>
-              <p className="text-sm text-muted-foreground">Total Spent</p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Past Orders Section */}
-        <Card className="p-6 animate-fade-in">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Past Orders</h3>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/orders")}>
-              View All
-            </Button>
-          </div>
-          <div className="space-y-3">
-            {[1, 2, 3].map((order) => (
-              <div
-                key={order}
-                className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <div className="flex-1">
-                  <p className="font-medium">Order #{1000 + order}</p>
-                  <p className="text-sm text-muted-foreground">
-                    The Campus Cafe • 2 items
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(Date.now() - order * 86400000).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold">₹{180 + order * 50}</p>
-                  <Badge variant="outline" className="mt-1">
-                    Completed
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* My Rewards Section */}
-        <Card className="p-6 animate-fade-in">
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="h-5 w-5 text-secondary" />
-            <h3 className="text-lg font-semibold">My Rewards</h3>
-          </div>
-          <div className="space-y-3">
-            <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-lg">250 Points</p>
-                  <p className="text-sm text-muted-foreground">
-                    Available Balance
-                  </p>
-                </div>
-                <Trophy className="h-8 w-8 text-primary" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-muted/50 text-center">
-                <p className="text-xl font-bold text-secondary">5</p>
-                <p className="text-xs text-muted-foreground">Active Offers</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/50 text-center">
-                <p className="text-xl font-bold text-accent">₹150</p>
-                <p className="text-xs text-muted-foreground">Saved Total</p>
-              </div>
-            </div>
+          <div className="text-center p-4 rounded-lg bg-muted/30">
+            <p className="text-sm text-muted-foreground">
+              Your order history and rewards will appear here
+            </p>
           </div>
         </Card>
 
