@@ -45,6 +45,26 @@ const Menu = () => {
   const [outlet, setOutlet] = useState<Outlet | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      try {
+        const cartData = JSON.parse(savedCart);
+        // Convert cart items array back to count object if from same outlet
+        if (cartData.outletId === Number(outletId) && cartData.items) {
+          const cartCounts: { [key: number]: number } = {};
+          cartData.items.forEach((item: any) => {
+            cartCounts[item.id] = item.quantity;
+          });
+          setCart(cartCounts);
+        }
+      } catch (e) {
+        console.error('Failed to load cart:', e);
+      }
+    }
+  }, [outletId]);
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -71,8 +91,36 @@ const Menu = () => {
     loadData();
   }, [outletId]);
 
+  const saveCartToLocalStorage = (cartCounts: { [key: number]: number }) => {
+    if (!outlet) return;
+    
+    // Convert cart counts to item array format for Cart page
+    const cartItems = Object.entries(cartCounts).map(([itemId, quantity]) => {
+      const item = menuItems.find((i) => i.id === Number(itemId));
+      return {
+        id: Number(itemId),
+        name: item?.name || '',
+        price: Number(item?.price || 0),
+        quantity,
+        image: item?.image_url || '/placeholder.svg'
+      };
+    });
+
+    const cartData = {
+      items: cartItems,
+      outletId: outlet.id,
+      outletName: outlet.name
+    };
+
+    localStorage.setItem('cart', JSON.stringify(cartData));
+  };
+
   const addToCart = (itemId: number) => {
-    setCart((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
+    setCart((prev) => {
+      const newCart = { ...prev, [itemId]: (prev[itemId] || 0) + 1 };
+      saveCartToLocalStorage(newCart);
+      return newCart;
+    });
     toast.success('Added to cart');
   };
 
@@ -81,6 +129,7 @@ const Menu = () => {
       const newCart = { ...prev };
       if (newCart[itemId] > 1) newCart[itemId]--;
       else delete newCart[itemId];
+      saveCartToLocalStorage(newCart);
       return newCart;
     });
   };

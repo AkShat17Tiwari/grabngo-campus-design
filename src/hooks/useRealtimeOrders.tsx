@@ -6,7 +6,7 @@ export interface Order {
   id: string;
   user_id: string;
   outlet_id: number;
-  status: 'placed' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  status: 'pending_payment' | 'placed' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'failed';
   subtotal: number;
   tax: number;
   total: number;
@@ -16,6 +16,7 @@ export interface Order {
   payment_id: string | null;
   special_instructions: string | null;
   estimated_pickup_time: string | null;
+  scheduled_pickup_slot: string | null;
   created_at: string;
   updated_at: string;
 }

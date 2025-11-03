@@ -66,8 +66,28 @@ const Checkout = () => {
       return;
     }
 
-    if (!cartData) {
+    // Validate cart data structure
+    if (!cartData || !cartData.items || cartData.items.length === 0) {
       toast.error("Cart is empty");
+      navigate("/cart");
+      return;
+    }
+
+    if (!cartData.outletId) {
+      toast.error("Invalid cart data - missing outlet information");
+      navigate("/cart");
+      return;
+    }
+
+    // Validate each cart item has required fields
+    const invalidItems = cartData.items.filter((item: any) => 
+      !item.id || !item.quantity || item.quantity <= 0
+    );
+    
+    if (invalidItems.length > 0) {
+      console.error('Invalid cart items:', invalidItems);
+      toast.error("Invalid items in cart");
+      navigate("/cart");
       return;
     }
 
@@ -81,23 +101,35 @@ const Checkout = () => {
         return;
       }
 
+      // Prepare order data matching backend schema
+      const orderPayload = {
+        outlet_id: Number(cartData.outletId),
+        items: cartData.items.map((item: any) => ({
+          menu_item_id: Number(item.id),
+          quantity: Number(item.quantity)
+        })),
+        customer_name: name.trim(),
+        customer_phone: phone.trim(),
+        special_instructions: instructions.trim() || undefined
+      };
+
+      console.log('Placing order with payload:', orderPayload);
+
       // Call place-order edge function
       const { data, error } = await supabase.functions.invoke('place-order', {
-        body: {
-          outlet_id: cartData.outletId,
-          items: cartData.items.map((item: any) => ({
-            menu_item_id: item.id,
-            quantity: item.quantity
-          })),
-          customer_name: name,
-          customer_phone: phone,
-          special_instructions: instructions || null
-        }
+        body: orderPayload
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Order placement error:', error);
+        throw error;
+      }
 
-      console.log('Order response:', data);
+      if (!data || !data.razorpay_order_id) {
+        throw new Error('Invalid response from server');
+      }
+
+      console.log('Order created successfully:', data);
 
       // Store pickup time
       setPickupTime(data.scheduled_pickup_slot);
