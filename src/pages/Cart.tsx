@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,29 +15,33 @@ interface CartItem {
 
 const Cart = () => {
   const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      name: "Classic Burger",
-      price: 149,
-      quantity: 2,
-      image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop",
-    },
-    {
-      id: 2,
-      name: "Margherita Pizza",
-      price: 199,
-      quantity: 1,
-      image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&auto=format&fit=crop",
-    },
-    {
-      id: 3,
-      name: "French Fries",
-      price: 79,
-      quantity: 2,
-      image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&auto=format&fit=crop",
-    },
-  ]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [outletId, setOutletId] = useState<number>(1);
+  const [outletName, setOutletName] = useState<string>("Campus Café");
+
+  useEffect(() => {
+    // Load cart from localStorage
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      const cart = JSON.parse(savedCart);
+      setCartItems(cart.items || []);
+      setOutletId(cart.outletId || 1);
+      setOutletName(cart.outletName || "Campus Café");
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save cart to localStorage whenever it changes
+    if (cartItems.length > 0) {
+      localStorage.setItem('cart', JSON.stringify({
+        items: cartItems,
+        outletId,
+        outletName
+      }));
+    } else {
+      localStorage.removeItem('cart');
+    }
+  }, [cartItems, outletId, outletName]);
 
   const updateQuantity = (id: number, change: number) => {
     setCartItems((items) =>
@@ -62,6 +66,21 @@ const Cart = () => {
   const deliveryFee = 20;
   const tax = Math.round(subtotal * 0.05);
   const total = subtotal + deliveryFee + tax;
+
+  const handleCheckout = () => {
+    // Save cart data with calculated totals
+    const cartData = {
+      items: cartItems,
+      outletId,
+      outletName,
+      subtotal,
+      tax,
+      deliveryFee,
+      total
+    };
+    localStorage.setItem('cart', JSON.stringify(cartData));
+    navigate('/checkout', { state: { cartData } });
+  };
 
   if (cartItems.length === 0) {
     return (
@@ -122,7 +141,7 @@ const Cart = () => {
         <Card className="p-4 mb-4">
           <div className="flex items-center gap-2 mb-4">
             <ShoppingBag className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Campus Café</span>
+            <span className="font-semibold">{outletName}</span>
           </div>
           <div className="space-y-4">
             {cartItems.map((item) => (
@@ -209,14 +228,16 @@ const Cart = () => {
       {/* Checkout Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
         <div className="container mx-auto">
-          <Link to="/checkout">
-            <Button size="lg" className="w-full rounded-full shadow-xl">
-              <div className="flex items-center justify-between w-full">
-                <span>Proceed to Checkout</span>
-                <span className="font-semibold">₹{total}</span>
-              </div>
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            className="w-full rounded-full shadow-xl"
+            onClick={handleCheckout}
+          >
+            <div className="flex items-center justify-between w-full">
+              <span>Proceed to Checkout</span>
+              <span className="font-semibold">₹{total}</span>
+            </div>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, MapPin, Clock, CreditCard, Wallet, User, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,24 +8,164 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [paymentMethod, setPaymentMethod] = useState("razorpay");
   const [instructions, setInstructions] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [cartData, setCartData] = useState<any>(null);
+  const [pickupTime, setPickupTime] = useState<string>("");
 
-  const handlePlaceOrder = () => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      toast.success("Order placed successfully!");
-      navigate("/orders");
-    }, 2000);
+  useEffect(() => {
+    // Load cart data from localStorage
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      setCartData(JSON.parse(savedCart));
+    } else if (location.state?.cartData) {
+      setCartData(location.state.cartData);
+    } else {
+      toast.error("No cart data found");
+      navigate("/cart");
+    }
+
+    // Load user data
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setName(user.user_metadata?.full_name || "");
+      setPhone(user.user_metadata?.phone || "");
+    }
   };
 
-  const total = 605;
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePlaceOrder = async () => {
+    // Validate form
+    if (!name.trim()) {
+      toast.error("Please enter your full name");
+      return;
+    }
+    if (!phone.trim() || phone.length !== 10) {
+      toast.error("Please enter a valid 10-digit phone number");
+      return;
+    }
+
+    if (!cartData) {
+      toast.error("Cart is empty");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please login to continue");
+        navigate("/auth");
+        return;
+      }
+
+      // Call place-order edge function
+      const { data, error } = await supabase.functions.invoke('place-order', {
+        body: {
+          outlet_id: cartData.outletId,
+          items: cartData.items.map((item: any) => ({
+            menu_item_id: item.id,
+            quantity: item.quantity
+          })),
+          customer_name: name,
+          customer_phone: phone,
+          special_instructions: instructions || null
+        }
+      });
+
+      if (error) throw error;
+
+      console.log('Order response:', data);
+
+      // Store pickup time
+      setPickupTime(data.scheduled_pickup_slot);
+
+      if (paymentMethod === "razorpay") {
+        // Load Razorpay script
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) {
+          toast.error("Failed to load payment gateway");
+          setIsProcessing(false);
+          return;
+        }
+
+        // Initialize Razorpay
+        const options = {
+          key: data.razorpay_key_id,
+          amount: data.amount,
+          currency: data.currency,
+          name: "GrabNGo",
+          description: "Food Order Payment",
+          order_id: data.razorpay_order_id,
+          handler: async function (response: any) {
+            console.log('Payment success:', response);
+            
+            // Clear cart
+            localStorage.removeItem('cart');
+            
+            toast.success("Payment successful! Order placed.");
+            navigate("/orders");
+          },
+          prefill: {
+            name: name,
+            contact: phone,
+            email: user.email
+          },
+          theme: {
+            color: "#F97316"
+          },
+          modal: {
+            ondismiss: function() {
+              setIsProcessing(false);
+              toast.error("Payment cancelled");
+            }
+          }
+        };
+
+        const razorpay = new (window as any).Razorpay(options);
+        razorpay.open();
+      } else {
+        // For other payment methods, just redirect
+        setTimeout(() => {
+          localStorage.removeItem('cart');
+          toast.success("Order placed successfully!");
+          navigate("/orders");
+        }, 1500);
+      }
+
+    } catch (error: any) {
+      console.error('Order error:', error);
+      toast.error(error.message || "Failed to place order");
+      setIsProcessing(false);
+    }
+  };
+
+  const total = cartData?.total || 0;
+  const subtotal = cartData?.subtotal || 0;
+  const tax = cartData?.tax || 0;
+  const deliveryFee = 20;
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -110,12 +250,12 @@ const Checkout = () => {
               <Clock className="h-5 w-5 text-secondary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold mb-1">Pickup Time</h3>
+              <h3 className="font-semibold mb-1">Estimated Pickup Time</h3>
               <p className="text-sm text-muted-foreground">
-                Ready in 15-20 minutes
+                Calculated based on queue length
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Estimated at 2:30 PM
+                Will be confirmed after order placement
               </p>
             </div>
           </div>
@@ -189,19 +329,19 @@ const Checkout = () => {
           <div className="space-y-3 text-base">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Item Total</span>
-              <span className="font-semibold">₹565</span>
+              <span className="font-semibold">₹{subtotal}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Delivery Fee</span>
-              <span className="font-semibold text-secondary">₹20</span>
+              <span className="font-semibold text-secondary">₹{deliveryFee}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Taxes (5%)</span>
-              <span className="font-semibold">₹20</span>
+              <span className="font-semibold">₹{tax}</span>
             </div>
             <div className="border-t-2 pt-3 mt-3 flex justify-between items-center">
               <span className="font-bold text-xl">Grand Total</span>
-              <span className="font-bold text-2xl text-primary">₹{total}</span>
+              <span className="font-bold text-2xl text-primary">₹{total.toFixed(0)}</span>
             </div>
           </div>
         </Card>
@@ -214,14 +354,14 @@ const Checkout = () => {
             size="lg"
             className="w-full rounded-full shadow-xl"
             onClick={handlePlaceOrder}
-            disabled={isProcessing}
+            disabled={isProcessing || !cartData}
           >
             {isProcessing ? (
               "Processing..."
             ) : (
               <div className="flex items-center justify-between w-full">
                 <span>Place Order</span>
-                <span className="font-semibold">₹{total}</span>
+                <span className="font-semibold">₹{total.toFixed(0)}</span>
               </div>
             )}
           </Button>

@@ -38,8 +38,10 @@ const Profile = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [orderCount, setOrderCount] = useState(0);
 
   useEffect(() => {
     loadUserData();
@@ -51,25 +53,70 @@ const Profile = () => {
       setUser(user);
       setEditName(user.user_metadata?.full_name || "");
       setEditPhone(user.user_metadata?.phone || "");
+
+      // Fetch profile with points
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profileData) {
+        setProfile(profileData);
+      } else {
+        // Create profile if doesn't exist
+        await supabase.from('profiles').insert({
+          user_id: user.id,
+          full_name: user.user_metadata?.full_name,
+          phone: user.user_metadata?.phone,
+          current_points: 0
+        });
+      }
+
+      // Fetch order count
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      setOrderCount(count || 0);
     }
   };
 
   const handleUpdateProfile = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({
-      data: {
-        full_name: editName,
-        phone: editPhone,
-      }
-    });
+    
+    try {
+      // Update auth user metadata
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          full_name: editName,
+          phone: editPhone,
+        }
+      });
 
-    if (error) {
-      toast.error(error.message);
-    } else {
+      if (authError) throw authError;
+
+      // Update profile table
+      if (user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: user.id,
+            full_name: editName,
+            phone: editPhone,
+          });
+
+        if (profileError) throw profileError;
+      }
+
       toast.success("Profile updated successfully!");
       setIsEditDialogOpen(false);
       loadUserData();
+    } catch (error: any) {
+      toast.error(error.message);
     }
+    
     setLoading(false);
   };
 
@@ -204,10 +251,33 @@ const Profile = () => {
 
           <Separator className="my-4" />
 
-          <div className="text-center p-4 rounded-lg bg-muted/30">
-            <p className="text-sm text-muted-foreground">
-              Your order history and rewards will appear here
-            </p>
+          {/* Points & Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Trophy className="w-5 h-5 text-primary" />
+                <p className="text-sm font-medium text-muted-foreground">Rewards Points</p>
+              </div>
+              <p className="text-3xl font-bold text-primary">
+                {profile?.current_points || 0}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Earn 1 point per ₹10 spent
+              </p>
+            </div>
+
+            <div className="p-4 rounded-lg bg-gradient-to-br from-secondary/10 to-secondary/5 border-2 border-secondary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-5 h-5 text-secondary" />
+                <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
+              </div>
+              <p className="text-3xl font-bold text-secondary">
+                {orderCount}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Lifetime orders placed
+              </p>
+            </div>
           </div>
         </Card>
 
