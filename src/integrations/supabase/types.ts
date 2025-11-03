@@ -22,6 +22,7 @@ export type Database = {
           id: number
           image_url: string | null
           in_stock: boolean | null
+          is_available: boolean | null
           is_veg: boolean | null
           name: string
           outlet_id: number
@@ -35,6 +36,7 @@ export type Database = {
           id?: number
           image_url?: string | null
           in_stock?: boolean | null
+          is_available?: boolean | null
           is_veg?: boolean | null
           name: string
           outlet_id: number
@@ -48,6 +50,7 @@ export type Database = {
           id?: number
           image_url?: string | null
           in_stock?: boolean | null
+          is_available?: boolean | null
           is_veg?: boolean | null
           name?: string
           outlet_id?: number
@@ -112,6 +115,54 @@ export type Database = {
           },
         ]
       }
+      order_statistics: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_ordered_at: string | null
+          menu_item_id: number | null
+          order_count: number | null
+          outlet_id: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_ordered_at?: string | null
+          menu_item_id?: number | null
+          order_count?: number | null
+          outlet_id?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_ordered_at?: string | null
+          menu_item_id?: number | null
+          order_count?: number | null
+          outlet_id?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_statistics_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_statistics_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           created_at: string | null
@@ -122,6 +173,7 @@ export type Database = {
           outlet_id: number
           payment_id: string | null
           payment_status: string | null
+          scheduled_pickup_slot: string | null
           special_instructions: string | null
           status: string
           subtotal: number
@@ -139,6 +191,7 @@ export type Database = {
           outlet_id: number
           payment_id?: string | null
           payment_status?: string | null
+          scheduled_pickup_slot?: string | null
           special_instructions?: string | null
           status?: string
           subtotal: number
@@ -156,6 +209,7 @@ export type Database = {
           outlet_id?: number
           payment_id?: string | null
           payment_status?: string | null
+          scheduled_pickup_slot?: string | null
           special_instructions?: string | null
           status?: string
           subtotal?: number
@@ -178,6 +232,7 @@ export type Database = {
         Row: {
           created_at: string | null
           cuisine: string | null
+          current_queue_length: number | null
           description: string | null
           distance: string | null
           estimated_time: string | null
@@ -186,11 +241,13 @@ export type Database = {
           is_open: boolean | null
           name: string
           rating: number | null
+          status: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           cuisine?: string | null
+          current_queue_length?: number | null
           description?: string | null
           distance?: string | null
           estimated_time?: string | null
@@ -199,11 +256,13 @@ export type Database = {
           is_open?: boolean | null
           name: string
           rating?: number | null
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           cuisine?: string | null
+          current_queue_length?: number | null
           description?: string | null
           distance?: string | null
           estimated_time?: string | null
@@ -212,6 +271,7 @@ export type Database = {
           is_open?: boolean | null
           name?: string
           rating?: number | null
+          status?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -220,6 +280,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          current_points: number | null
           full_name: string | null
           id: string
           phone: string | null
@@ -229,6 +290,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          current_points?: number | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -238,6 +300,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          current_points?: number | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -275,6 +338,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_pickup_time: {
+        Args: { _items_count: number; _outlet_id: number }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
