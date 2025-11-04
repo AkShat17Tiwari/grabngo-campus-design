@@ -14,6 +14,11 @@ import VendorConsole from "./pages/VendorConsole";
 import Auth from "./pages/Auth";
 import { DesignSystemDemo } from "./components/DesignSystemDemo";
 import NotFound from "./pages/NotFound";
+import CancellationRefunds from "./pages/CancellationRefunds";
+import TermsConditions from "./pages/TermsConditions";
+import Shipping from "./pages/Shipping";
+import Privacy from "./pages/Privacy";
+import ContactUs from "./pages/ContactUs";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +68,11 @@ const AppContent = () => {
       <Route path="/profile" element={<Profile />} />
       <Route path="/vendor" element={<VendorConsole />} />
       <Route path="/design-system" element={<DesignSystemDemo />} />
+      <Route path="/cancellation-refunds" element={<CancellationRefunds />} />
+      <Route path="/terms-conditions" element={<TermsConditions />} />
+      <Route path="/shipping" element={<Shipping />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/contact-us" element={<ContactUs />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
