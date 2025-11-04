@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "sonner";
+import PolicyFooter from "@/components/PolicyFooter";
 
 const ContactUs = () => {
   const navigate = useNavigate();
@@ -102,7 +103,8 @@ const ContactUs = () => {
                   <Mail className="h-5 w-5 text-primary mt-0.5" />
                   <div>
                     <p className="font-medium">Email</p>
-                    <p className="text-sm text-muted-foreground">support@grabнgo.com</p>
+                    <p className="text-sm text-muted-foreground">support@grabngo.edu</p>
+                    <p className="text-xs text-muted-foreground mt-1">We respond within 24 hours</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -110,16 +112,17 @@ const ContactUs = () => {
                   <div>
                     <p className="font-medium">Phone</p>
                     <p className="text-sm text-muted-foreground">+91 9876543210</p>
+                    <p className="text-xs text-muted-foreground mt-1">Mon-Fri, 9:00 AM - 6:00 PM</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-medium">Address</p>
+                    <p className="font-medium">Campus Location</p>
                     <p className="text-sm text-muted-foreground">
-                      Campus Food Court<br />
-                      University Campus<br />
-                      City, State - 123456
+                      GrabNGo Support Office<br />
+                      Main Campus, Building A, Ground Floor<br />
+                      University Campus, City - 123456
                     </p>
                   </div>
                 </div>
@@ -128,23 +131,59 @@ const ContactUs = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Business Hours</CardTitle>
+                <CardTitle>Support Hours</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Monday - Friday</span>
-                    <span className="font-medium">9:00 AM - 10:00 PM</span>
+                <div className="flex items-start gap-3 mb-4">
+                  <Clock className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium mb-2">Customer Support</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Monday - Friday</span>
+                        <span className="font-medium">9:00 AM - 6:00 PM</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Saturday - Sunday</span>
+                        <span className="font-medium">Closed</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Saturday - Sunday</span>
-                    <span className="font-medium">10:00 AM - 11:00 PM</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  For urgent issues during non-business hours, please email us and we'll respond as soon as possible.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Common Inquiries</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="font-medium">Order Issues</p>
+                    <p className="text-muted-foreground">Missing items, incorrect orders, quality concerns</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Payment & Refunds</p>
+                    <p className="text-muted-foreground">Payment failures, refund status, transaction issues</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Account Support</p>
+                    <p className="text-muted-foreground">Login issues, password reset, account settings</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">General Feedback</p>
+                    <p className="text-muted-foreground">Suggestions, complaints, feature requests</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
+        <PolicyFooter />
       </main>
     </div>
   );

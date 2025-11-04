@@ -377,6 +377,21 @@ const Checkout = () => {
             </div>
           </div>
         </Card>
+
+        {/* Cancellation Policy Notice */}
+        <Card className="p-4 bg-muted/50">
+          <p className="text-sm text-muted-foreground">
+            By placing this order, you agree to our{" "}
+            <Button
+              variant="link"
+              className="h-auto p-0 text-primary font-medium underline"
+              onClick={() => navigate("/cancellation-refunds")}
+            >
+              Cancellation & Refunds Policy
+            </Button>
+            . You have 60 seconds to cancel after order placement.
+          </p>
+        </Card>
       </main>
 
       {/* Place Order Button */}
