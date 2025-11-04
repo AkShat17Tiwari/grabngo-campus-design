@@ -120,8 +120,24 @@ serve(async (req) => {
     const scheduledPickupSlot = pickupTimeData || new Date(Date.now() + 30 * 60000).toISOString();
 
     // Initialize Razorpay via API
-    const razorpayKeyId = Deno.env.get('RAZORPAY_KEY_ID') || '';
-    const razorpayKeySecret = Deno.env.get('RAZORPAY_KEY_SECRET') || '';
+    const razorpayKeyId = Deno.env.get('RAZORPAY_KEY_ID');
+    const razorpayKeySecret = Deno.env.get('RAZORPAY_KEY_SECRET');
+    
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      console.error('Razorpay credentials missing:', {
+        hasKeyId: !!razorpayKeyId,
+        hasKeySecret: !!razorpayKeySecret
+      });
+      return new Response(
+        JSON.stringify({ 
+          error: 'Payment gateway not configured',
+          message: 'Razorpay credentials are missing. Please contact support.'
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Creating Razorpay order with Key ID:', razorpayKeyId.substring(0, 8) + '...');
     
     // Create Razorpay order via API
     const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {

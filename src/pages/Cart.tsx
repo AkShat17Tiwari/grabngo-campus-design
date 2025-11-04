@@ -131,7 +131,7 @@ const Cart = () => {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-xl font-bold">Cart ({cartItems.length} items)</h1>
+            <h1 className="text-xl font-bold">Cart ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</h1>
           </div>
         </div>
       </header>
