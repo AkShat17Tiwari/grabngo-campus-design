@@ -432,14 +432,14 @@ const Profile = () => {
                   <div className="space-y-3">
                     <div className="p-3 rounded-lg bg-muted">
                       <p className="text-sm font-medium">Email</p>
-                      <a href="mailto:support@grabngo.edu" className="text-sm text-primary">
-                        support@grabngo.edu
+                      <a href="mailto:akshatr147@gmail.com" className="text-sm text-primary">
+                        akshatr147@gmail.com
                       </a>
                     </div>
                     <div className="p-3 rounded-lg bg-muted">
                       <p className="text-sm font-medium">Phone</p>
-                      <a href="tel:+911234567890" className="text-sm text-primary">
-                        +91 123 456 7890
+                      <a href="tel:+917080046904" className="text-sm text-primary">
+                        +91 708 004 6904
                       </a>
                     </div>
                   </div>
