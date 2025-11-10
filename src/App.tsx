@@ -19,6 +19,7 @@ import TermsConditions from "./pages/TermsConditions";
 import Shipping from "./pages/Shipping";
 import Privacy from "./pages/Privacy";
 import ContactUs from "./pages/ContactUs";
+import { ChatSupport } from "./components/ChatSupport";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +87,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AppContent />
+        <ChatSupport />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
