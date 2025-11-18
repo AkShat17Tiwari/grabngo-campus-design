@@ -29,9 +29,12 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useRole } from "@/hooks/useRole";
+import { BarChart3, Store } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { role } = useRole();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -178,6 +181,38 @@ const Profile = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6 mb-20">
+        {/* Dashboard Links for Admin/Vendor */}
+        {(role === 'admin' || role === 'vendor_staff') && (
+          <Card className="p-4 bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/20">
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Quick Access
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {role === 'admin' && (
+                <Button 
+                  onClick={() => navigate('/admin')}
+                  variant="default"
+                  className="w-full justify-start"
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Admin Dashboard
+                </Button>
+              )}
+              {role === 'vendor_staff' && (
+                <Button 
+                  onClick={() => navigate('/vendor')}
+                  variant="default"
+                  className="w-full justify-start"
+                >
+                  <Store className="h-4 w-4 mr-2" />
+                  Vendor Console
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
+
         {/* User Info Card */}
         <Card className="p-6 animate-fade-in">
           <div className="flex items-center gap-4">

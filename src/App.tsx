@@ -11,6 +11,7 @@ import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 import VendorConsole from "./pages/VendorConsole";
+import AdminDashboard from "./pages/AdminDashboard";
 import Auth from "./pages/Auth";
 import { DesignSystemDemo } from "./components/DesignSystemDemo";
 import NotFound from "./pages/NotFound";
@@ -20,6 +21,7 @@ import Shipping from "./pages/Shipping";
 import Privacy from "./pages/Privacy";
 import ContactUs from "./pages/ContactUs";
 import { ChatSupport } from "./components/ChatSupport";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -67,7 +69,22 @@ const AppContent = () => {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/orders" element={<Orders />} />
       <Route path="/profile" element={<Profile />} />
-      <Route path="/vendor" element={<VendorConsole />} />
+      <Route 
+        path="/vendor" 
+        element={
+          <ProtectedRoute allowedRoles={['vendor_staff']}>
+            <VendorConsole />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } 
+      />
       <Route path="/design-system" element={<DesignSystemDemo />} />
       <Route path="/cancellation-refunds" element={<CancellationRefunds />} />
       <Route path="/terms-conditions" element={<TermsConditions />} />

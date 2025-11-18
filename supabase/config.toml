@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.chat-support]
 verify_jwt = false
+
+[functions.analytics]
+verify_jwt = true
