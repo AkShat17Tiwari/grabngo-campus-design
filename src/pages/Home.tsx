@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OutletCard } from "@/components/OutletCard";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Navigation } from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -100,19 +100,7 @@ const Home = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <ThemeToggle />
-              <Link to="/vendor">
-                <Button variant="outline" size="sm" className="hidden md:flex">
-                  Staff Console
-                </Button>
-              </Link>
-              <Link to="/profile">
-                <Button variant="outline" size="icon" className="rounded-full">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-semibold">
-                    U
-                  </div>
-                </Button>
-              </Link>
+              <Navigation />
             </div>
           </div>
 

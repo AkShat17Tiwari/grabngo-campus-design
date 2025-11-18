@@ -7,6 +7,7 @@ import { ArrowLeft, TrendingUp, DollarSign, ShoppingCart, Clock } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { dummyDailySales, dummyMonthlySales, dummyPopularItems, dummyHourlySales } from '@/data/dummyAnalytics';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
@@ -15,10 +16,24 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [analytics, setAnalytics] = useState<any>(null);
+  const [useDummyData, setUseDummyData] = useState(true); // Toggle for dummy data
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [period]);
+    if (useDummyData) {
+      // Use dummy data for demo
+      setAnalytics({
+        totalOrders: dummyDailySales.reduce((sum, d) => sum + d.orders, 0),
+        totalRevenue: dummyDailySales.reduce((sum, d) => sum + d.revenue, 0),
+        completedOrders: Math.floor(dummyDailySales.reduce((sum, d) => sum + d.orders, 0) * 0.85),
+        avgOrderValue: Math.round(dummyDailySales.reduce((sum, d) => sum + d.revenue, 0) / dummyDailySales.reduce((sum, d) => sum + d.orders, 0)),
+        ordersByDate: dummyDailySales,
+        ordersByHour: dummyHourlySales,
+        topItems: dummyPopularItems
+      });
+    } else {
+      fetchAnalytics();
+    }
+  }, [period, useDummyData]);
 
   const fetchAnalytics = async () => {
     try {

@@ -11,6 +11,7 @@ import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 import VendorConsole from "./pages/VendorConsole";
+import VendorDashboard from "./pages/VendorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import Auth from "./pages/Auth";
 import { DesignSystemDemo } from "./components/DesignSystemDemo";
@@ -74,6 +75,14 @@ const AppContent = () => {
         element={
           <ProtectedRoute allowedRoles={['vendor_staff']}>
             <VendorConsole />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/vendor/dashboard" 
+        element={
+          <ProtectedRoute allowedRoles={['vendor_staff']}>
+            <VendorDashboard />
           </ProtectedRoute>
         } 
       />
