@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/InputField";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Mail, Lock, Chrome, User, Phone } from "lucide-react";
@@ -29,6 +30,7 @@ const Auth = () => {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState<"customer" | "vendor_staff" | "admin">("customer");
   const [signupErrors, setSignupErrors] = useState<{ 
     name?: string; 
     phone?: string; 
@@ -38,22 +40,64 @@ const Auth = () => {
   }>({});
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check if user is already logged in and redirect based on role
+    const checkSessionAndRedirect = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/");
+        // Fetch user role
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+        
+        if (roleData) {
+          redirectBasedOnRole(roleData.role);
+        } else {
+          navigate("/");
+        }
       }
-    });
+    };
+
+    checkSessionAndRedirect();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/");
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session && event === 'SIGNED_IN') {
+        // Small delay to ensure role is created
+        setTimeout(async () => {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (roleData) {
+            redirectBasedOnRole(roleData.role);
+          } else {
+            navigate("/");
+          }
+        }, 500);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const redirectBasedOnRole = (role: string) => {
+    switch (role) {
+      case 'admin':
+        navigate('/admin');
+        break;
+      case 'vendor_staff':
+        navigate('/vendor');
+        break;
+      case 'customer':
+      default:
+        navigate('/');
+        break;
+    }
+  };
 
   const validateLoginForm = () => {
     const errors: { email?: string; password?: string } = {};
@@ -154,7 +198,7 @@ const Auth = () => {
     setLoading(true);
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: signupEmail,
       password: signupPassword,
       options: {
@@ -168,9 +212,27 @@ const Auth = () => {
 
     if (error) {
       toast.error(error.message);
-    } else {
+      setLoading(false);
+      return;
+    }
+
+    // Create user role after signup
+    if (data.user) {
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: data.user.id,
+          role: selectedRole,
+          outlet_id: selectedRole === 'vendor_staff' ? 1 : null // Default to first outlet for vendors
+        });
+
+      if (roleError) {
+        console.error('Error creating user role:', roleError);
+      }
+
       toast.success("Account created! Welcome to GrabNGo!");
     }
+    
     setLoading(false);
   };
 
@@ -305,6 +367,37 @@ const Auth = () => {
                   icon={<Mail className="w-4 h-4" />}
                   required
                 />
+
+                {/* Role Selection */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Select Role</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      type="button"
+                      variant={selectedRole === 'customer' ? 'default' : 'outline'}
+                      className="w-full"
+                      onClick={() => setSelectedRole('customer')}
+                    >
+                      Customer
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={selectedRole === 'vendor_staff' ? 'default' : 'outline'}
+                      className="w-full"
+                      onClick={() => setSelectedRole('vendor_staff')}
+                    >
+                      Vendor
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={selectedRole === 'admin' ? 'default' : 'outline'}
+                      className="w-full"
+                      onClick={() => setSelectedRole('admin')}
+                    >
+                      Admin
+                    </Button>
+                  </div>
+                </div>
                 
                 <InputField
                   label="Password"
