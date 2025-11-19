@@ -37,16 +37,16 @@ export const Navigation = () => {
       case "admin":
         return (
           <>
-            <Link to="/admin">
-              <Button variant={location.pathname === "/admin" ? "default" : "ghost"} size="sm" className="gap-2">
+            <Link to="/admin/dashboard">
+              <Button variant={location.pathname.startsWith("/admin") ? "default" : "ghost"} size="sm" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
-                Dashboard
+                Admin Dashboard
               </Button>
             </Link>
-            <Link to="/outlets">
-              <Button variant={location.pathname === "/outlets" ? "default" : "ghost"} size="sm" className="gap-2">
-                <Store className="h-4 w-4" />
-                Outlets
+            <Link to="/">
+              <Button variant={location.pathname === "/" ? "default" : "ghost"} size="sm" className="gap-2">
+                <Home className="h-4 w-4" />
+                Home
               </Button>
             </Link>
           </>
@@ -55,13 +55,19 @@ export const Navigation = () => {
         return (
           <>
             <Link to="/vendor">
-              <Button variant={location.pathname === "/vendor" ? "default" : "ghost"} size="sm" className="gap-2">
+              <Button variant={location.pathname === "/vendor" && !location.pathname.includes("/dashboard") ? "default" : "ghost"} size="sm" className="gap-2">
+                <Store className="h-4 w-4" />
+                Console
+              </Button>
+            </Link>
+            <Link to="/vendor/dashboard">
+              <Button variant={location.pathname === "/vendor/dashboard" ? "default" : "ghost"} size="sm" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Dashboard
               </Button>
             </Link>
-            <Link to="/vendor/orders">
-              <Button variant={location.pathname === "/vendor/orders" ? "default" : "ghost"} size="sm" className="gap-2">
+            <Link to="/orders">
+              <Button variant={location.pathname === "/orders" ? "default" : "ghost"} size="sm" className="gap-2">
                 <Package className="h-4 w-4" />
                 Orders
               </Button>
