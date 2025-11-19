@@ -15,44 +15,79 @@ const VendorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [outletName, setOutletName] = useState<string>('');
-  const [useDummyData] = useState(true); // Using dummy data for demo
-
-  // Use dummy data scaled down for vendor
-  const vendorDailySales = dummyDailySales.map(d => ({
-    ...d,
-    orders: Math.floor(d.orders * 0.5),
-    revenue: Math.floor(d.revenue * 0.5)
-  }));
-
-  const vendorPopularItems = dummyPopularItems.slice(0, 5);
+  const [analytics, setAnalytics] = useState<any>(null);
 
   useEffect(() => {
-    const loadOutletInfo = async () => {
-      if (outletId) {
-        const { data } = await supabase
-          .from('outlets')
-          .select('name')
-          .eq('id', outletId)
-          .single();
-        
-        if (data) {
-          setOutletName(data.name);
-        }
+    loadVendorData();
+  }, [outletId, period]);
+
+  const loadVendorData = async () => {
+    try {
+      setLoading(true);
+      
+      if (!outletId) return;
+
+      // Fetch outlet info
+      const { data: outletData } = await supabase
+        .from('outlets')
+        .select('name')
+        .eq('id', outletId)
+        .single();
+      
+      if (outletData) {
+        setOutletName(outletData.name);
       }
+
+      // Fetch analytics
+      const [summaryRes, topItemsRes, ordersByDateRes, ordersByHourRes] = await Promise.all([
+        supabase.functions.invoke('vendor-analytics', {
+          body: { endpoint: 'summary', period }
+        }),
+        supabase.functions.invoke('vendor-analytics', {
+          body: { endpoint: 'top-items', period }
+        }),
+        supabase.functions.invoke('vendor-analytics', {
+          body: { endpoint: 'orders-by-date', period }
+        }),
+        supabase.functions.invoke('vendor-analytics', {
+          body: { endpoint: 'orders-by-hour', period }
+        }),
+      ]);
+
+      if (summaryRes.error) throw summaryRes.error;
+      if (topItemsRes.error) throw topItemsRes.error;
+      if (ordersByDateRes.error) throw ordersByDateRes.error;
+      if (ordersByHourRes.error) throw ordersByHourRes.error;
+
+      setAnalytics({
+        ...summaryRes.data,
+        topItems: topItemsRes.data.topItems,
+        ordersByDate: ordersByDateRes.data.ordersByDate,
+        ordersByHour: ordersByHourRes.data.ordersByHour,
+      });
+    } catch (error: any) {
+      console.error('Error fetching vendor analytics:', error);
+      
+      // Fallback to dummy data
+      const vendorDailySales = dummyDailySales.map(d => ({
+        ...d,
+        orders: Math.floor(d.orders * 0.5),
+        revenue: Math.floor(d.revenue * 0.5)
+      }));
+
+      setAnalytics({
+        totalOrders: vendorDailySales.reduce((sum, d) => sum + d.orders, 0),
+        totalRevenue: vendorDailySales.reduce((sum, d) => sum + d.revenue, 0),
+        completedOrders: Math.floor(vendorDailySales.reduce((sum, d) => sum + d.orders, 0) * 0.85),
+        pendingOrders: 5,
+        avgOrderValue: Math.round(vendorDailySales.reduce((sum, d) => sum + d.revenue, 0) / vendorDailySales.reduce((sum, d) => sum + d.orders, 0)),
+        ordersByDate: vendorDailySales,
+        ordersByHour: dummyHourlySales.map(h => ({ ...h, orders: Math.floor(h.orders * 0.5) })),
+        topItems: dummyPopularItems.slice(0, 5)
+      });
+    } finally {
       setLoading(false);
-    };
-
-    loadOutletInfo();
-  }, [outletId]);
-
-  const analytics = {
-    totalOrders: vendorDailySales.reduce((sum, d) => sum + d.orders, 0),
-    totalRevenue: vendorDailySales.reduce((sum, d) => sum + d.revenue, 0),
-    completedOrders: Math.floor(vendorDailySales.reduce((sum, d) => sum + d.orders, 0) * 0.85),
-    avgOrderValue: Math.round(vendorDailySales.reduce((sum, d) => sum + d.revenue, 0) / vendorDailySales.reduce((sum, d) => sum + d.orders, 0)),
-    ordersByDate: vendorDailySales,
-    ordersByHour: dummyHourlySales.map(h => ({ ...h, orders: Math.floor(h.orders * 0.5) })),
-    topItems: vendorPopularItems
+    }
   };
 
   if (loading) {
@@ -102,7 +137,7 @@ const VendorDashboard = () => {
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{analytics.totalOrders}</div>
+              <div className="text-2xl font-bold">{analytics?.totalOrders || 0}</div>
             </CardContent>
           </Card>
 
@@ -112,7 +147,7 @@ const VendorDashboard = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹{analytics.totalRevenue?.toLocaleString()}</div>
+              <div className="text-2xl font-bold">₹{analytics?.totalRevenue?.toLocaleString() || 0}</div>
             </CardContent>
           </Card>
 
@@ -122,17 +157,17 @@ const VendorDashboard = () => {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{analytics.completedOrders}</div>
+              <div className="text-2xl font-bold">{analytics?.completedOrders || 0}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Order Value</CardTitle>
+              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹{analytics.avgOrderValue}</div>
+              <div className="text-2xl font-bold">{analytics?.pendingOrders || 0}</div>
             </CardContent>
           </Card>
         </div>
@@ -146,11 +181,17 @@ const VendorDashboard = () => {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={analytics.ordersByDate}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
+                <LineChart data={analytics?.ordersByDate || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="day" stroke="hsl(var(--foreground))" />
+                  <YAxis stroke="hsl(var(--foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
                   <Legend />
                   <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2} />
                 </LineChart>
@@ -165,11 +206,17 @@ const VendorDashboard = () => {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.ordersByDate}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
+                <BarChart data={analytics?.ordersByDate || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="day" stroke="hsl(var(--foreground))" />
+                  <YAxis stroke="hsl(var(--foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
                   <Legend />
                   <Bar dataKey="revenue" fill="hsl(var(--primary))" />
                 </BarChart>
@@ -183,18 +230,24 @@ const VendorDashboard = () => {
           <CardHeader>
             <CardTitle>Orders by Hour</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analytics.ordersByHour}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="hour" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="orders" fill="hsl(var(--secondary))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analytics?.ordersByHour || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="hour" stroke="hsl(var(--foreground))" />
+                  <YAxis stroke="hsl(var(--foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="orders" fill="hsl(var(--secondary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
         </Card>
 
         {/* Top Items */}

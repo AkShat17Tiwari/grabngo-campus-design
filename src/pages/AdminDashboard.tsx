@@ -16,40 +16,58 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [analytics, setAnalytics] = useState<any>(null);
-  const [useDummyData, setUseDummyData] = useState(true); // Toggle for dummy data
 
   useEffect(() => {
-    if (useDummyData) {
-      // Use dummy data for demo
-      setAnalytics({
-        totalOrders: dummyDailySales.reduce((sum, d) => sum + d.orders, 0),
-        totalRevenue: dummyDailySales.reduce((sum, d) => sum + d.revenue, 0),
-        completedOrders: Math.floor(dummyDailySales.reduce((sum, d) => sum + d.orders, 0) * 0.85),
-        avgOrderValue: Math.round(dummyDailySales.reduce((sum, d) => sum + d.revenue, 0) / dummyDailySales.reduce((sum, d) => sum + d.orders, 0)),
-        ordersByDate: dummyDailySales,
-        ordersByHour: dummyHourlySales,
-        topItems: dummyPopularItems
-      });
-    } else {
-      fetchAnalytics();
-    }
-  }, [period, useDummyData]);
+    fetchAnalytics();
+  }, [period]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('analytics', {
-        body: { period }
+
+      // Fetch all analytics in parallel
+      const [summaryRes, topItemsRes, ordersByDateRes, ordersByHourRes] = await Promise.all([
+        supabase.functions.invoke('admin-analytics', {
+          body: { endpoint: 'summary', period }
+        }),
+        supabase.functions.invoke('admin-analytics', {
+          body: { endpoint: 'top-items', period }
+        }),
+        supabase.functions.invoke('admin-analytics', {
+          body: { endpoint: 'orders-by-date', period }
+        }),
+        supabase.functions.invoke('admin-analytics', {
+          body: { endpoint: 'orders-by-hour', period }
+        }),
+      ]);
+
+      if (summaryRes.error) throw summaryRes.error;
+      if (topItemsRes.error) throw topItemsRes.error;
+      if (ordersByDateRes.error) throw ordersByDateRes.error;
+      if (ordersByHourRes.error) throw ordersByHourRes.error;
+
+      setAnalytics({
+        ...summaryRes.data,
+        topItems: topItemsRes.data.topItems,
+        ordersByDate: ordersByDateRes.data.ordersByDate,
+        ordersByHour: ordersByHourRes.data.ordersByHour,
       });
-
-      if (error) throw error;
-
-      if (data?.analytics) {
-        setAnalytics(data.analytics);
-      }
     } catch (error: any) {
       console.error('Error fetching analytics:', error);
-      toast.error('Failed to load analytics');
+      toast.error('Failed to load analytics. Using demo data.');
+      
+      // Fallback to dummy data
+      setAnalytics({
+        totalOrders: dummyDailySales.reduce((sum, d) => sum + d.orders, 0),
+        totalRevenue: dummyDailySales.reduce((sum, d) => sum + d.revenue, 0),
+        completedOrders: Math.floor(dummyDailySales.reduce((sum, d) => sum + d.orders, 0) * 0.85),
+        averageOrderValue: Math.round(dummyDailySales.reduce((sum, d) => sum + d.revenue, 0) / dummyDailySales.reduce((sum, d) => sum + d.orders, 0)),
+        totalVendors: 5,
+        refunds: 3,
+        ordersByDate: dummyDailySales,
+        ordersByHour: dummyHourlySales,
+        topItems: dummyPopularItems
+      });
     } finally {
       setLoading(false);
     }
@@ -92,7 +110,7 @@ const AdminDashboard = () => {
         </Tabs>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
@@ -130,6 +148,26 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">₹{analytics?.averageOrderValue?.toFixed(2) || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics?.totalVendors || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Refunds</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{analytics?.refunds || 0}</div>
             </CardContent>
           </Card>
         </div>
