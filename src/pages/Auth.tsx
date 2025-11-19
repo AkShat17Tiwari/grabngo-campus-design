@@ -87,10 +87,10 @@ const Auth = () => {
   const redirectBasedOnRole = (role: string) => {
     switch (role) {
       case 'admin':
-        navigate('/admin');
+        navigate('/admin/dashboard');
         break;
       case 'vendor_staff':
-        navigate('/vendor');
+        navigate('/vendor/dashboard');
         break;
       case 'customer':
       default:

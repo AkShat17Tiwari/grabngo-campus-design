@@ -14,6 +14,7 @@ import VendorConsole from "./pages/VendorConsole";
 import VendorDashboard from "./pages/VendorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import Auth from "./pages/Auth";
+import AdminSetup from "./pages/AdminSetup";
 import { DesignSystemDemo } from "./components/DesignSystemDemo";
 import NotFound from "./pages/NotFound";
 import CancellationRefunds from "./pages/CancellationRefunds";
@@ -65,6 +66,7 @@ const AppContent = () => {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/admin/setup" element={<AdminSetup />} />
       <Route path="/menu/:outletId" element={<Menu />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/checkout" element={<Checkout />} />
@@ -88,6 +90,14 @@ const AppContent = () => {
       />
       <Route 
         path="/admin" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/dashboard" 
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminDashboard />
