@@ -33,6 +33,55 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if admins already exist
+    const { count: adminCount } = await supabaseAdmin
+      .from('user_roles')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'admin');
+
+    // If admins exist, verify caller is admin
+    if (adminCount && adminCount > 0) {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        console.warn('Unauthorized setup-admin attempt: No auth header');
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized. Only admins can create additional admin accounts.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      if (userError || !user) {
+        console.warn('Unauthorized setup-admin attempt: Invalid token');
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized. Invalid authentication.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { data: roleData, error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (roleError || roleData?.role !== 'admin') {
+        console.warn(`Forbidden setup-admin attempt by user ${user.id}: Not an admin`);
+        return new Response(
+          JSON.stringify({ error: 'Forbidden. Only admins can create additional admin accounts.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Admin ${user.id} authorized to create admin account`);
+    }
+
     // Check if admin user already exists
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
     const adminExists = existingUsers?.users.some(u => u.email === adminEmail);
