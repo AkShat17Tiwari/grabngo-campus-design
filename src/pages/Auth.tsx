@@ -30,7 +30,7 @@ const Auth = () => {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState<"customer" | "vendor_staff" | "admin">("customer");
+  // Security: Only allow customer signups. Admins and vendors must be assigned by existing admins.
   const [signupErrors, setSignupErrors] = useState<{ 
     name?: string; 
     phone?: string; 
@@ -216,14 +216,15 @@ const Auth = () => {
       return;
     }
 
-    // Create user role after signup
+    // Create user role after signup - always customer for self-signup
+    // Admins must assign vendor_staff or admin roles
     if (data.user) {
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
           user_id: data.user.id,
-          role: selectedRole,
-          outlet_id: selectedRole === 'vendor_staff' ? 1 : null // Default to first outlet for vendors
+          role: 'customer',
+          outlet_id: null
         });
 
       if (roleError) {
@@ -367,37 +368,6 @@ const Auth = () => {
                   icon={<Mail className="w-4 h-4" />}
                   required
                 />
-
-                {/* Role Selection */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Select Role</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      type="button"
-                      variant={selectedRole === 'customer' ? 'default' : 'outline'}
-                      className="w-full"
-                      onClick={() => setSelectedRole('customer')}
-                    >
-                      Customer
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={selectedRole === 'vendor_staff' ? 'default' : 'outline'}
-                      className="w-full"
-                      onClick={() => setSelectedRole('vendor_staff')}
-                    >
-                      Vendor
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={selectedRole === 'admin' ? 'default' : 'outline'}
-                      className="w-full"
-                      onClick={() => setSelectedRole('admin')}
-                    >
-                      Admin
-                    </Button>
-                  </div>
-                </div>
                 
                 <InputField
                   label="Password"
