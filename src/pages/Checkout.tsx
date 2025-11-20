@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, MapPin, Clock, CreditCard, Wallet, User, Phone } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Wallet, User, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [paymentMethod, setPaymentMethod] = useState("razorpay");
+  const [paymentMethod] = useState("cash_on_pickup");
   const [instructions, setInstructions] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [name, setName] = useState("");
@@ -45,15 +44,6 @@ const Checkout = () => {
     }
   };
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
 
   const handlePlaceOrder = async () => {
     // Validate form
@@ -135,59 +125,11 @@ const Checkout = () => {
       // Store pickup time
       setPickupTime(data.scheduled_pickup_slot);
 
-      if (paymentMethod === "razorpay") {
-        if (!data.razorpay_order_id) {
-          throw new Error('Invalid payment response from server');
-        }
-        // Load Razorpay script
-        const scriptLoaded = await loadRazorpayScript();
-        if (!scriptLoaded) {
-          toast.error("Failed to load payment gateway");
-          setIsProcessing(false);
-          return;
-        }
-
-        // Initialize Razorpay
-        const options = {
-          key: data.razorpay_key_id,
-          amount: data.amount,
-          currency: data.currency,
-          name: "GrabNGo",
-          description: "Food Order Payment",
-          order_id: data.razorpay_order_id,
-          handler: async function (response: any) {
-            console.log('Payment success:', response);
-            
-            // Clear cart
-            localStorage.removeItem('cart');
-            
-            toast.success("Payment successful! Order placed.");
-            navigate("/orders");
-          },
-          prefill: {
-            name: name,
-            contact: phone,
-            email: user.email
-          },
-          theme: {
-            color: "#F97316"
-          },
-          modal: {
-            ondismiss: function() {
-              setIsProcessing(false);
-              toast.error("Payment cancelled");
-            }
-          }
-        };
-
-        const razorpay = new (window as any).Razorpay(options);
-        razorpay.open();
-      } else {
-        // For cash on pickup, order is already placed
-        localStorage.removeItem('cart');
-        toast.success("Order placed successfully! Pay at pickup.");
-        navigate("/orders");
-      }
+      // For cash on pickup, order is already placed
+      localStorage.removeItem('cart');
+      toast.success("Order placed successfully! Pay at pickup.");
+      setIsProcessing(false);
+      navigate("/orders");
 
     } catch (error: any) {
       console.error('Order error:', error);
@@ -307,54 +249,16 @@ const Checkout = () => {
         </Card>
 
         {/* Payment Method */}
-        <Card className="p-5 border-2">
-          <h3 className="font-bold text-xl mb-4">Payment Method</h3>
-          <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-            {/* Razorpay - Primary Payment Option */}
-            <div className="flex items-center space-x-3 p-4 rounded-lg border-2 border-primary hover:bg-primary/5 transition-colors">
-              <RadioGroupItem value="razorpay" id="razorpay" />
-              <Label
-                htmlFor="razorpay"
-                className="flex items-center gap-3 flex-1 cursor-pointer"
-              >
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <CreditCard className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="font-bold text-base">Pay with Razorpay</p>
-                  <p className="text-sm text-muted-foreground">
-                    UPI, Cards, Wallets & More - Safe & Secure
-                  </p>
-                </div>
-              </Label>
+        <Card className="p-5 border-2 bg-accent/5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Wallet className="h-6 w-6 text-primary" />
             </div>
-
-            <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-              <RadioGroupItem value="upi" id="upi" />
-              <Label
-                htmlFor="upi"
-                className="flex items-center gap-3 flex-1 cursor-pointer"
-              >
-                <Wallet className="h-6 w-6 text-secondary" />
-                <div>
-                  <p className="font-medium">UPI Direct</p>
-                  <p className="text-sm text-muted-foreground">
-                    PhonePe, Google Pay, Paytm
-                  </p>
-                </div>
-              </Label>
+            <div>
+              <h3 className="font-bold text-lg">Cash on Pickup</h3>
+              <p className="text-sm text-muted-foreground">Pay when you collect your order</p>
             </div>
-
-            <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors">
-              <RadioGroupItem value="cod" id="cod" />
-              <Label htmlFor="cod" className="flex-1 cursor-pointer">
-                <p className="font-medium">Cash on Pickup</p>
-                <p className="text-sm text-muted-foreground">
-                  Pay when you collect your order
-                </p>
-              </Label>
-            </div>
-          </RadioGroup>
+          </div>
         </Card>
 
         {/* Order Summary */}
