@@ -86,7 +86,7 @@ serve(async (req) => {
       );
     }
 
-    // Calculate totals
+    // Calculate totals with security monitoring
     let subtotal = 0;
     const orderItems = orderData.items.map(orderItem => {
       const menuItem = menuItems.find(mi => mi.id === orderItem.menu_item_id)!;
@@ -104,6 +104,16 @@ serve(async (req) => {
 
     const tax = subtotal * 0.05; // 5% tax
     const total = subtotal + tax;
+
+    console.log('Order pricing calculated:', {
+      user_id: user.id,
+      outlet_id: orderData.outlet_id,
+      subtotal,
+      tax,
+      total,
+      items_count: orderItems.length,
+      timestamp: new Date().toISOString()
+    });
 
     // Calculate pickup time using database function
     const totalItems = orderData.items.reduce((sum, item) => sum + item.quantity, 0);
