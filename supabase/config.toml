@@ -13,7 +13,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.chat-support]
-verify_jwt = false
+verify_jwt = true
 
 [functions.analytics]
 verify_jwt = true

@@ -17,9 +17,21 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Admin credentials
-    const adminEmail = 'akshatr147@gmail.com';
-    const adminPassword = '1234567';
+    // Get admin credentials from environment variables (stored securely as secrets)
+    const adminEmail = Deno.env.get('ADMIN_EMAIL');
+    const adminPassword = Deno.env.get('ADMIN_PASSWORD');
+
+    if (!adminEmail || !adminPassword) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Admin credentials not configured. Please set ADMIN_EMAIL and ADMIN_PASSWORD secrets in Supabase.' 
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
     // Check if admin user already exists
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
