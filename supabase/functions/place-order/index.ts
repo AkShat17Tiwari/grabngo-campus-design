@@ -17,6 +17,7 @@ interface PlaceOrderRequest {
   customer_name: string;
   customer_phone: string;
   special_instructions?: string;
+  payment_method?: string;
 }
 
 serve(async (req) => {
@@ -129,57 +130,67 @@ serve(async (req) => {
 
     const scheduledPickupSlot = pickupTimeData || new Date(Date.now() + 30 * 60000).toISOString();
 
-    // Initialize Razorpay via API
-    const razorpayKeyId = Deno.env.get('RAZORPAY_KEY_ID');
-    const razorpayKeySecret = Deno.env.get('RAZORPAY_KEY_SECRET');
-    
-    if (!razorpayKeyId || !razorpayKeySecret) {
-      console.error('Razorpay credentials missing:', {
-        hasKeyId: !!razorpayKeyId,
-        hasKeySecret: !!razorpayKeySecret
+    const paymentMethod = orderData.payment_method || 'razorpay';
+    let razorpayOrder: any = null;
+
+    // Only create Razorpay order if payment method is razorpay
+    if (paymentMethod === 'razorpay') {
+      const razorpayKeyId = Deno.env.get('RAZORPAY_KEY_ID');
+      const razorpayKeySecret = Deno.env.get('RAZORPAY_KEY_SECRET');
+      
+      if (!razorpayKeyId || !razorpayKeySecret) {
+        console.error('Razorpay credentials missing:', {
+          hasKeyId: !!razorpayKeyId,
+          hasKeySecret: !!razorpayKeySecret
+        });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Payment gateway not configured',
+            message: 'Razorpay credentials are missing. Please contact support.'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Creating Razorpay order with Key ID:', razorpayKeyId.substring(0, 8) + '...');
+      
+      // Create Razorpay order via API
+      const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`${razorpayKeyId}:${razorpayKeySecret}`)}`
+        },
+        body: JSON.stringify({
+          amount: Math.round(total * 100), // Amount in paise
+          currency: 'INR',
+          receipt: `order_${Date.now()}`,
+          notes: {
+            user_id: user.id,
+            outlet_id: orderData.outlet_id.toString(),
+          }
+        })
       });
-      return new Response(
-        JSON.stringify({ 
-          error: 'Payment gateway not configured',
-          message: 'Razorpay credentials are missing. Please contact support.'
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+
+      if (!razorpayResponse.ok) {
+        const error = await razorpayResponse.text();
+        console.error('Razorpay API error:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create payment order', details: error }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      razorpayOrder = await razorpayResponse.json();
+      console.log('Razorpay order created:', razorpayOrder.id);
+    } else {
+      console.log('Cash on pickup selected - skipping Razorpay order creation');
     }
 
-    console.log('Creating Razorpay order with Key ID:', razorpayKeyId.substring(0, 8) + '...');
+    // Create order in database
+    const orderStatus = paymentMethod === 'cash_on_pickup' ? 'placed' : 'pending_payment';
+    const paymentStatus = paymentMethod === 'cash_on_pickup' ? 'cod' : 'pending';
     
-    // Create Razorpay order via API
-    const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(`${razorpayKeyId}:${razorpayKeySecret}`)}`
-      },
-      body: JSON.stringify({
-        amount: Math.round(total * 100), // Amount in paise
-        currency: 'INR',
-        receipt: `order_${Date.now()}`,
-        notes: {
-          user_id: user.id,
-          outlet_id: orderData.outlet_id.toString(),
-        }
-      })
-    });
-
-    if (!razorpayResponse.ok) {
-      const error = await razorpayResponse.text();
-      console.error('Razorpay API error:', error);
-      return new Response(
-        JSON.stringify({ error: 'Failed to create payment order', details: error }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const razorpayOrder = await razorpayResponse.json();
-    console.log('Razorpay order created:', razorpayOrder.id);
-
-    // Create order in database with pending_payment status
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
       .insert({
@@ -191,9 +202,9 @@ serve(async (req) => {
         subtotal,
         tax,
         total,
-        status: 'pending_payment',
-        payment_status: 'pending',
-        payment_id: razorpayOrder.id,
+        status: orderStatus,
+        payment_status: paymentStatus,
+        payment_id: razorpayOrder?.id || null,
         scheduled_pickup_slot: scheduledPickupSlot,
       })
       .select()
@@ -230,16 +241,22 @@ serve(async (req) => {
 
     console.log(`Order created successfully: ${order.id}`);
 
+    // Prepare response based on payment method
+    const response: any = {
+      success: true,
+      order_id: order.id,
+      scheduled_pickup_slot: scheduledPickupSlot,
+    };
+
+    if (paymentMethod === 'razorpay' && razorpayOrder) {
+      response.razorpay_order_id = razorpayOrder.id;
+      response.razorpay_key_id = Deno.env.get('RAZORPAY_KEY_ID');
+      response.amount = Math.round(total * 100);
+      response.currency = 'INR';
+    }
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        order_id: order.id,
-        razorpay_order_id: razorpayOrder.id,
-        razorpay_key_id: razorpayKeyId,
-        amount: Math.round(total * 100),
-        currency: 'INR',
-        scheduled_pickup_slot: scheduledPickupSlot,
-      }),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

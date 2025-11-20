@@ -110,7 +110,8 @@ const Checkout = () => {
         })),
         customer_name: name.trim(),
         customer_phone: phone.trim(),
-        special_instructions: instructions.trim() || undefined
+        special_instructions: instructions.trim() || undefined,
+        payment_method: paymentMethod
       };
 
       console.log('Placing order with payload:', orderPayload);
@@ -125,7 +126,7 @@ const Checkout = () => {
         throw error;
       }
 
-      if (!data || !data.razorpay_order_id) {
+      if (!data) {
         throw new Error('Invalid response from server');
       }
 
@@ -135,6 +136,9 @@ const Checkout = () => {
       setPickupTime(data.scheduled_pickup_slot);
 
       if (paymentMethod === "razorpay") {
+        if (!data.razorpay_order_id) {
+          throw new Error('Invalid payment response from server');
+        }
         // Load Razorpay script
         const scriptLoaded = await loadRazorpayScript();
         if (!scriptLoaded) {
@@ -179,12 +183,10 @@ const Checkout = () => {
         const razorpay = new (window as any).Razorpay(options);
         razorpay.open();
       } else {
-        // For other payment methods, just redirect
-        setTimeout(() => {
-          localStorage.removeItem('cart');
-          toast.success("Order placed successfully!");
-          navigate("/orders");
-        }, 1500);
+        // For cash on pickup, order is already placed
+        localStorage.removeItem('cart');
+        toast.success("Order placed successfully! Pay at pickup.");
+        navigate("/orders");
       }
 
     } catch (error: any) {
